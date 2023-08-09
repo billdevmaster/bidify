@@ -3,7 +3,6 @@ import { useWeb3React } from "@web3-react/core";
 import { FetchWrapper } from "use-nft";
 import { ethers, Contract } from "ethers";
 import Web3 from "web3";
-import { Link } from "react-router-dom";
 
 //IMPORTING STYLESHEET
 
@@ -12,7 +11,6 @@ import "../styles/patterns/liveauction.scss";
 //IMPORTING PATTERNS
 
 import Card from "../patterns/card";
-import { Text, Button } from "../components";
 import ScreenTemplate from "../patterns/screenTemplate";
 import NoArtifacts from "../patterns/noArtifacts";
 
@@ -29,13 +27,14 @@ const MyBiddings = () => {
   //INITIALIZING HOOKS
 
   const { userState, userDispatch } = useContext(UserContext);
-  const { account, chainId } = useWeb3React();
+  const { active, account, chainId } = useWeb3React();
 
   //HANDLING METHODS
 
   useEffect(() => {
     if (!userState?.isLiveAuctionFetched) getLists();
-  }, [account, chainId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, chainId, userState]);
 
   const getLists = async () => {
     //const Bidify = new web3.eth.Contract(BIDIFY.abi, BIDIFY.address);
@@ -53,7 +52,7 @@ const MyBiddings = () => {
   const getLogs = async () => {
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     const topic0 =
-      "0xb8160cd5a5d5f01ed9352faa7324b9df403f9c15c1ed9ba8cb8ee8ddbd50b748";
+      "0x5424fbee1c8f403254bd729bf71af07aa944120992dfa4f67cd0e7846ef7b8de";
     const logs = await web3.eth.getPastLogs({
       fromBlock: "earliest",
       toBlock: "latest",
@@ -61,41 +60,59 @@ const MyBiddings = () => {
       topics: [topic0],
     });
 
-    let totalLists = 0;
-    for (let log of logs) {
-      totalLists++;
-    }
-
-    return totalLists;
+    return logs.length;
   };
 
   const getFetchValues = async (val) => {
     let provider;
-    if (chainId === 4) {
-      provider = new ethers.providers.InfuraProvider(
-        "rinkeby",
-        "5eee22163f644a2caebb48fb76f3cce0"
-      );
-    } else if (chainId === 3) {
-      provider = new ethers.providers.InfuraProvider(
-        "ropsten",
-        "5eee22163f644a2caebb48fb76f3cce0"
-      );
-    } else if (chainId === 5) {
-      provider = new ethers.providers.InfuraProvider(
-        "goerli",
-        "5eee22163f644a2caebb48fb76f3cce0"
-      );
-    } else if (chainId === 42) {
-      provider = new ethers.providers.InfuraProvider(
-        "kovan",
-        "5eee22163f644a2caebb48fb76f3cce0"
-      );
-    } else if (chainId === 1) {
-      provider = new ethers.providers.InfuraProvider(
-        "goerli",
-        "5eee22163f644a2caebb48fb76f3cce0"
-      );
+    switch (chainId) {
+      case 1:
+        provider = new ethers.providers.InfuraProvider(
+          "mainnet",
+          "0c8149f8e63b4b818d441dd7f74ab618"
+        );
+        break;
+      case 3:
+        provider = new ethers.providers.InfuraProvider(
+          "ropsten",
+          "0c8149f8e63b4b818d441dd7f74ab618"
+        );
+        break;
+      case 4:
+        provider = new ethers.providers.InfuraProvider(
+          "rinkeby",
+          "0c8149f8e63b4b818d441dd7f74ab618"
+        );
+        break;
+      case 5:
+        provider = new ethers.providers.InfuraProvider(
+          "goerli",
+          "0c8149f8e63b4b818d441dd7f74ab618"
+        );
+        break;
+      case 42:
+        provider = new ethers.providers.InfuraProvider(
+          "kovan",
+          "0c8149f8e63b4b818d441dd7f74ab618"
+        );
+        break;
+      case 1987:
+        provider = new ethers.providers.JsonRpcProvider("https://lb.rpc.egem.io")
+        break;
+      case 43113:
+        provider = new ethers.providers.JsonRpcProvider("https://api.avax-test.network/ext/bc/C/rpc")
+        break;
+      case 43114:
+        provider = new ethers.providers.JsonRpcProvider("https://api.avax.network/ext/bc/C/rpc")
+        break;
+      case 137:
+        provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com")
+        break;
+      case 80001:
+        provider = new ethers.providers.JsonRpcProvider("https://matic-testnet-archive-rpc.bwarelabs.com")
+        break;
+      default:
+        console.log("select valid chain");
     }
 
     const ethersConfig = {
@@ -110,8 +127,9 @@ const MyBiddings = () => {
     }
 
     function imageurl(url) {
-      const string = url;
+      // const string = url;
       const check = url.substr(16, 4);
+      if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
       if (check === "ipfs") {
         const manipulated = url.substr(16, 16 + 45);
         return "https://dweb.link/" + manipulated;
@@ -163,7 +181,7 @@ const MyBiddings = () => {
 
   const renderCards = (
     <>
-      {userState?.userBiddings?.length > 0 ? (
+      { !active ? <NoArtifacts title="Bidify is not connected to Ethereum." /> : userState?.userBiddings?.length > 0 ? (
         <div className="live_auction_card_wrapper">
           {userState?.userBiddings?.map((lists, index) => {
             return <Card {...lists} key={index} />;

@@ -8,25 +8,18 @@ import { Button, Text } from "../components";
 //IMPORTING MEDIA ASSETS
 
 import logofull from "../assets/logo/logofull.svg";
-
-//IMPORTING UTILITY PACKAGES
-
-import { injected } from "../utils/connector";
+import { supportedChainIds } from "../utils/config";
 
 const ScreenTemplate = ({ children }) => {
   const [initailLoad, setInitialLoad] = useState(true);
   const [wrongNetwork, setWrongNetwork] = useState(false);
-  const { active, activate, chainId } = useWeb3React();
+  const { chainId } = useWeb3React();
   const [isMetamask, setIsMetamask] = useState(false);
 
   useEffect(() => {
     if (chainId) {
       if (
-        chainId === 4 ||
-        chainId === 5 ||
-        chainId === 42 ||
-        chainId === 3 ||
-        chainId === 1
+        supportedChainIds.includes(chainId)
       ) {
         setWrongNetwork(false);
       } else setWrongNetwork(true);
@@ -42,7 +35,7 @@ const ScreenTemplate = ({ children }) => {
     setInitialLoad(true);
     setTimeout(() => {
       setInitialLoad(false);
-    }, 2000);
+    }, 500);
   }, []);
 
   if (initailLoad) {
@@ -87,16 +80,16 @@ const ScreenTemplate = ({ children }) => {
     );
   }
 
-  if (!active) {
-    return (
-      <div className="flex_center">
-        <img src={logofull} alt="logo" width={300} />
-        <Button variant="primary" onClick={() => activate(injected)}>
-          Connect Wallet
-        </Button>
-      </div>
-    );
-  }
+  // if (!active) {
+  //   return (
+  //     <div className="flex_center">
+  //       <img src={logofull} alt="logo" width={300} />
+  //       <Button variant="primary" onClick={() => activate(injected)}>
+  //         Connect Wallet
+  //       </Button>
+  //     </div>
+  //   );
+  // }
 
   return <div className="screen_template">{children}</div>;
 };

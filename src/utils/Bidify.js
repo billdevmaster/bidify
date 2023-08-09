@@ -268,7 +268,7 @@ export function atomic(value, decimals) {
 }
 
 // Convert to a human readable value
-function unatomic(value, decimals) {
+export function unatomic(value, decimals) {
   value = value.padStart(decimals + 1, "0");
   let temp =
     value.substr(0, value.length - decimals) +
@@ -484,7 +484,6 @@ export async function getListing(id) {
     if (value === "0x0000000000000000000000000000000000000000") {
       return null;
     }
-
     return value;
   };
 
@@ -494,6 +493,7 @@ export async function getListing(id) {
   let highBidder = nullIfZeroAddress(raw.highBidder);
   let currentBid = raw.price;
   let nextBid = await Bidify.methods.getNextBid(id).call();
+  let endingPrice = raw.endingPrice;
   let decimals = await getDecimals(currency);
   if (currentBid === nextBid) {
     currentBid = null;
@@ -533,6 +533,7 @@ export async function getListing(id) {
     highBidder,
     currentBid,
     nextBid: unatomic(nextBid, decimals),
+    endingPrice: unatomic(endingPrice.toString(), decimals),
 
     referrer,
     allowMarketplace: raw.allowMarketplace,
@@ -540,6 +541,7 @@ export async function getListing(id) {
 
     endTime: raw.endTime,
     paidOut: raw.paidOut,
+    isERC721: raw.isERC721,
 
     bids,
   };
@@ -555,24 +557,35 @@ export async function getListing(id) {
 
 export async function signBid(id, amount) {
   // return;
+  
+  const from = window?.ethereum?.selectedAddress;
+  const chain_id = await chainId;
   let currency = (await getListing(id)).currency;
-  const chainId = await web3.eth.getBlockNumber();
-
-  const Bidify = await getBidify();
-  const erc20 = new web3.eth.Contract(BIT.abi, currency);
-
-  const decimals = await getDecimals(currency);
-
-  const balance = unatomic(
-    await erc20.methods.balanceOf(window?.ethereum?.selectedAddress).call(),
-    decimals
-  );
-
-  if (Number(balance) >= Number(amount)) {
-    await erc20.methods
-      .approve(Bidify._address, atomic(amount, decimals))
-      .send({ from: window.ethereum.selectedAddress });
-  } else {
+  let balance;
+  // console.log("sign bid", from)
+  if(!currency) {
+    balance = await web3.eth.getBalance(from)
+    balance = web3.utils.fromWei(balance)
+    // console.log(balance)
+  }
+  else {
+    const Bidify = await getBidify();
+    const erc20 = new web3.eth.Contract(BIT.abi, currency);
+    const decimals = await getDecimals(currency);
+    balance = unatomic(
+      await erc20.methods.balanceOf(window?.ethereum?.selectedAddress).call(),
+      decimals
+    );
+    let allowance = await erc20.methods.allowance(from, BIDIFY.address[chain_id]).call()
+    // console.log("allowence", Number(allowance));
+    if(Number(amount) >= Number(allowance))
+      await erc20.methods
+        .approve(Bidify._address, atomic(balance, decimals))
+        .send({ from: window.ethereum.selectedAddress });
+  }
+   
+  // console.log("amount and balance", Number(amount), Number(balance))
+  if (Number(balance) < Number(amount)) {
     throw "low_balance";
   }
 }
@@ -589,17 +602,19 @@ export async function bid(id, amount) {
   let currency = (await getListing(id)).currency;
   let decimals = await getDecimals(currency)
   const Bidify = await getBidify();
+  const from = window?.ethereum?.selectedAddress
   // return console.log("handle bid", id, atomic(amount, decimals).toString())
+  // console.log("amount", atomic(amount, decimals).toString())
   if (currency) {
     await Bidify.methods
       .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals))
-      .send({ from: window?.ethereum?.selectedAddress });
+      .send({ from: from });
   } else {
     await Bidify.methods
-      .bid(id, "0x0000000000000000000000000000000000000000", amount)
+      .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals))
       .send({
-        from: window?.ethereum?.selectedAddress,
-        value: await Bidify.methods.getNextBid(id).call(),
+        from: from,
+        value: atomic(amount, decimals),
       });
   }
 }
@@ -630,7 +645,7 @@ export async function getListings(creator, platform) {
     toBlock: "latest",
     address: settings.bidifyAddress,
     topics: [
-      "0xb8160cd5a5d5f01ed9352faa7324b9df403f9c15c1ed9ba8cb8ee8ddbd50b748",
+      "0x5424fbee1c8f403254bd729bf71af07aa944120992dfa4f67cd0e7846ef7b8de",
       null,
       creatorTopic,
       platformTopic,
@@ -655,6 +670,7 @@ export async function finish(id) {
     .finish(id)
     .send({ from: window?.ethereum?.selectedAddress });
 }
+
 
 /**
  * Gets eth balance of current connected account
@@ -686,6 +702,14 @@ export async function withdraw() {
  * @method
  * @memberof Bidify
  */
+export async function mintNFT(token) {
+  await new web3.eth.Contract(TestNFTJSON, settings.nftAddress).methods
+    ._mint(token)
+    .send({ from });
+
+  return { token, address: settings.nftAddress };
+}
+
 
 const TestNFTJSON = [
   {
@@ -931,10 +955,3 @@ const TestNFTJSON = [
   },
 ];
 
-export async function mintNFT(token) {
-  await new web3.eth.Contract(TestNFTJSON, settings.nftAddress).methods
-    ._mint(token)
-    .send({ from });
-
-  return { token, address: settings.nftAddress };
-}

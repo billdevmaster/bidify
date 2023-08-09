@@ -22,23 +22,25 @@ import down from "../assets/icons/down.svg";
 //IMPORTING STORE COMPONENTS
 
 import { UserContext } from "../store/contexts";
+import { useWeb3React } from "@web3-react/core";
 
 const MarketPlace = () => {
   //INITIALIZING HOOKS
 
-  const { userState, userDispatch } = useContext(UserContext);
+  const { userState } = useContext(UserContext);
   const [data, setData] = useState([]);
   const [filterData, setFilterData] = useState({});
   const [isPriceDropdown, setIsPriceDropdown] = useState(false);
   const [isBidsDropdown, setIsBidsDropdown] = useState(false);
   const [range, setRange] = useState(0);
-  const options = {method: 'GET'};
+  const { active } = useWeb3React();
+  // const options = {method: 'GET'};
 
   useEffect(() => {
     if (userState?.liveAuctions) {
       setData(userState?.liveAuctions);
     }
-  }, []);
+  }, [userState]);
 
   useEffect(() => {
     if (filterData.price) {
@@ -58,14 +60,14 @@ const MarketPlace = () => {
     }
     setIsBidsDropdown(false);
     setIsPriceDropdown(false);
-  }, [filterData]);
+  }, [filterData, userState]);
 
   useEffect(() => {
     var filData = userState?.liveAuctions?.filter(
       ({ nextBid }) => Number(nextBid) >= range
     );
     setData(filData);
-  }, [range]);
+  }, [range, userState]);
 
   const renderPriceDropdown = (
     <div className="dropdown_content">
@@ -153,11 +155,11 @@ const MarketPlace = () => {
               />
             </section>
             <p>
-              <Text component="span">0 BIT</Text>
-              <Text component="span">1000 BIT</Text>
+              <Text component="span">0 WETH</Text>
+              <Text component="span">1000 WETH</Text>
             </p>
           </div>
-          <p style={{ transform: "translateY(-20px)" }}>{range} BIT</p>
+          <p style={{ transform: "translateY(-20px)" }}>{range} WETH</p>
         </div>
       </div>
     </div>
@@ -174,7 +176,7 @@ const MarketPlace = () => {
 
   const renderCards = (
     <>
-      {data?.length > 0 ? (
+      { !active ? <NoArtifacts title="Bidify is not connected to Ethereum." /> : data?.length > 0 ? (
         <div className="live_auction_card_wrapper">
           {data?.map((lists, index) => {
             return <Card {...lists} key={index} />;

@@ -1,13 +1,12 @@
+import { useWeb3React } from "@web3-react/core";
 import React from "react";
-
-//IMPORTING MEDIA ASSETS
-
-import loader from "../assets/icons/loader.svg";
+import { NetworkData } from "../utils/config";
 
 const Loader = () => {
+  const { account, chainId } = useWeb3React();
   return (
     <div className="loader">
-      <img src={loader} alt="loader" style={{ width: "3em" }} />
+      <img src={account ? NetworkData[chainId].loader : NetworkData[4].loader} alt="loader" style={{ width: "8em" }} />
     </div>
   );
 };

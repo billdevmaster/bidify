@@ -11,8 +11,6 @@ import { Text } from "../components";
 
 //IMPORTING MEDIA ASSETS
 
-import logo from "../assets/logo/bidifylogo.png";
-
 import search from "../assets/icons/search.svg";
 import hamburger from "../assets/icons/hamburger.svg";
 import outline_close from "../assets/icons/outline_close.svg";
@@ -20,10 +18,12 @@ import outline_close from "../assets/icons/outline_close.svg";
 //IMPORTING STORE COMPONENTS
 
 import { UserContext } from "../store/contexts";
+import { useWeb3React } from "@web3-react/core";
+import { NetworkData, getSymbol } from "../utils/config";
 
 const Header = ({ title, description }) => {
   //INITIALIZING HOOKS
-
+  const { account, chainId } = useWeb3React();
   const { userState, userDispatch } = useContext(UserContext);
 
   const searchRef = useRef();
@@ -32,6 +32,7 @@ const Header = ({ title, description }) => {
     userDispatch({
       type: "RESET",
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // HANDLING SEARCH METHOD
@@ -42,7 +43,6 @@ const Header = ({ title, description }) => {
       payload: { keyword: keyword.current.value },
     });
   };
-
   const renderScreenHeader = (
     <div
       className={
@@ -50,7 +50,8 @@ const Header = ({ title, description }) => {
       }
     >
       <Link to="/" className="logo">
-        <img src={logo} alt="logo" width={48} />
+        <img src={NetworkData[(account ? chainId : 4)].logo} alt="logo" width={48} />
+        <Text variant="primary">{getSymbol(chainId)}</Text>
       </Link>
       <div className="content">
         <Text variant="primary">{title}</Text>

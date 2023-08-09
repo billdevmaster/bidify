@@ -7,24 +7,26 @@ import "../styles/patterns/navbar.scss";
 
 //IMPORTING MEDIA ASSETS
 
-import dashboardActive from "../assets/icons/dashboardActive.svg";
-import biddingActive from "../assets/icons/biddingActive.svg";
-import myCollectionActive from "../assets/icons/myCollectionActive.svg";
-import NFTActive from "../assets/icons/NFTActive.svg";
-import logo from "../assets/logo/bidifylogo.png";
-
+import dashboardActive from "../assets/menu/auctions.png";
+import biddingActive from "../assets/menu/mybidding.png";
+import myCollectionActive from "../assets/menu/wallet.png";
+import NFTActive from "../assets/menu/support.png";
 //IMPORTING STORE COMPONENTS
 
 import { UserContext } from "../store/contexts";
+import { useWeb3React } from "@web3-react/core";
+import { Text } from "../components";
+import { getSymbol, NetworkData } from "../utils/config";
 
 const Navbar = () => {
   //INITIALIZING HOOKS
-
+  const { chainId, account } = useWeb3React()
   const { userDispatch } = useContext(UserContext);
 
   const renderLogo = (
     <div className="logo">
-      <img src={logo} alt="logo" width={48} />
+      <img src={NetworkData[(account ? chainId : 4)].logo} alt="logo" width={48} />
+      <Text variant="primary">{getSymbol(chainId)}</Text>
     </div>
   );
 
