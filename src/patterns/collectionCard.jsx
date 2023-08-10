@@ -24,6 +24,7 @@ import pauseImg from "../assets/icons/pause-circle.svg";
 import NFTPortImage from "../assets/placeholders/nftport.gif"
 import FleekImage from "../assets/placeholders/fleek.gif"
 import IpfsImage from "../assets/placeholders/ipfs.gif"
+import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
@@ -60,6 +61,12 @@ const CollectionCard = (props) => {
   const history = useHistory()
   const { userDispatch } = useContext(UserContext);
   useEffect(() => {
+    fetch(image).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
     if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
     if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
     return setPlaceholder(IpfsImage)
@@ -478,7 +485,7 @@ const CollectionCard = (props) => {
             src={image}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
-            onError={() => setIsVideo(true)}
+            onError={() => setPlaceholder(NoImage)}
             afterLoad={() => setLoadingImage(false)}
             width={"100%"}
             heigh={"100%"}

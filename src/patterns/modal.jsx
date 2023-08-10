@@ -14,6 +14,7 @@ import { Text, Button } from "../components";
 import close from "../assets/icons/close.svg";
 import playImg from "../assets/icons/play-circle.svg";
 import pauseImg from "../assets/icons/pause-circle.svg";
+import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 const backdrop = {
   hidden: { opacity: 0 },

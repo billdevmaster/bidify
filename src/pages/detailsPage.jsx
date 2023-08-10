@@ -25,6 +25,7 @@ import lock from "../assets/icons/lock.svg";
 import NFTPortImage from "../assets/placeholders/nftport.gif"
 import FleekImage from "../assets/placeholders/fleek.gif"
 import IpfsImage from "../assets/placeholders/ipfs.gif"
+import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
@@ -79,6 +80,12 @@ const DetailsPage = () => {
     setLatestDetail(data[0])
     getTransferHistory()
     const image = data[0].image_cache ? data[0].image_cache : data[0].image
+    fetch(image).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
     if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
     if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
     return setPlaceholder(IpfsImage)
@@ -687,7 +694,7 @@ const DetailsPage = () => {
                   placeholder={
                     <div></div>
                   }
-                  onError={() => setIsVideo(true)}
+                  onError={() => setPlaceholder(NoImage)}
                   afterLoad={() => setLoadingImage(false)}
                 />
               </>
@@ -751,7 +758,7 @@ const DetailsPage = () => {
         {data?.map((val, index) => {
           return (
             <div className="history_details" key={index}>
-              {transfers.length > 0 ? (
+              {transfers && transfers.length > 0 ? (
                 transfers.map((detail, index) => {
                   return (
                     <div className="flex_gap" key={index}>

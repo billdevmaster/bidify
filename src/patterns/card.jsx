@@ -54,14 +54,14 @@ const Card = (props) => {
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
   useEffect(() => {
-    if (imageToDisplay.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-    if (imageToDisplay.includes('fleek.co')) return setPlaceholder(FleekImage)
     fetch(imageToDisplay).then(response => {
       const contentType = response.headers.get("content-type");
       if (contentType.includes("video")) {
         setIsVideo(true);
       }
     })
+    if (imageToDisplay.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
+    if (imageToDisplay.includes('fleek.co')) return setPlaceholder(FleekImage)
     return setPlaceholder(IpfsImage)
   }, [imageToDisplay, setPlaceholder])
   // useEffect(() => {

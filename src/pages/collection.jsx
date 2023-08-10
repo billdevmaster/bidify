@@ -85,7 +85,7 @@ const Collection = () => {
   useEffect(() => {
     if (account !== undefined) {
       // getDetails();
-      getCollection()
+      getCollection();
     } else {
       console.log("connect wallet to view collections");
     }
@@ -360,7 +360,9 @@ const Collection = () => {
       />
       {!active ? <NoArtifacts title="Bidify is not connected to Ethereum." /> : userState?.myCollections ? (
         userState?.myCollections?.length > 0 ? (
-          renderCards
+          <>
+            {renderCards}
+          </>
         ) : (
           <NoArtifacts title="There are currently no compatible NFTs in this wallet" />
         )
