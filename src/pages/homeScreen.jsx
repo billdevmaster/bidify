@@ -55,6 +55,7 @@ const HomeScreen = () => {
   const totalData = 9;
 
   const handleFilter = async (platform, name) => {
+    console.log(platform);
     setloading(true);
     // setCurrentPlatform(platform);
     setCurrentState(name);

@@ -41,7 +41,6 @@ const LiveAuction = () => {
     axios.get(`${baseUrl}/auctions`, { params: { chainId: chainId } })
       .then(response => {
         const results = response.data
-        // console.log("database", results)
         // const filteredData = results.filter((val) => val.paidOut !== true);
         const userBiddings = results.filter((value) =>
           value.bids.some(

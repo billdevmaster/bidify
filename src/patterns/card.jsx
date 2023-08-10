@@ -20,6 +20,7 @@ import lock from "../assets/icons/lock.svg";
 import NFTPortImage from "../assets/placeholders/nftport.gif"
 import FleekImage from "../assets/placeholders/fleek.gif"
 import IpfsImage from "../assets/placeholders/ipfs.gif"
+import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
@@ -55,6 +56,12 @@ const Card = (props) => {
   useEffect(() => {
     if (imageToDisplay.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
     if (imageToDisplay.includes('fleek.co')) return setPlaceholder(FleekImage)
+    fetch(imageToDisplay).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
     return setPlaceholder(IpfsImage)
   }, [imageToDisplay, setPlaceholder])
   // useEffect(() => {
@@ -423,8 +430,8 @@ const Card = (props) => {
             placeholder={
               <div></div>
             }
-            onError={(e) => {console.log(e);setIsVideo(true)}}
-            afterLoad={() => {console.log("loaded images");setLoadingImage(false)}}
+            onError={(e) => {setPlaceholder(NoImage)}}
+            afterLoad={() => {setLoadingImage(false)}}
           />
         </>
       )}

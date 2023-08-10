@@ -24,8 +24,8 @@ import arbitrumLoader from "../assets/icons/loader_arbitrum.gif";
 import optimismLoader from "../assets/icons/loader_optimism.gif";
 import zksyncLoader from "../assets/icons/loader_3d_zksync.gif";
 
-export const baseUrl = "https://bidify-api-75aadbe06182.herokuapp.com/api"
-// export const baseUrl = "http://localhost:8080/api"
+// export const baseUrl = "https://bidify-api-75aadbe06182.herokuapp.com/api"
+export const baseUrl = "http://localhost:3001/api"
 export const NetworkId = {
   ETHEREUM: 1,
   RINKEBY: 4,
