@@ -61,6 +61,7 @@ const CollectionCard = (props) => {
   const history = useHistory()
   const { userDispatch } = useContext(UserContext);
   useEffect(() => {
+    console.log(image);
     fetch(image).then(response => {
       const contentType = response.headers.get("content-type");
       if (contentType.includes("video")) {

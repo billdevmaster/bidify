@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LazyLoadImage } from "react-lazy-load-image-component";
 
 //IMPORTING STYLESHEET
 
@@ -15,6 +16,9 @@ import close from "../assets/icons/close.svg";
 import playImg from "../assets/icons/play-circle.svg";
 import pauseImg from "../assets/icons/pause-circle.svg";
 import NoImage from "../assets/placeholders/nft-placeholder.svg"
+import NFTPortImage from "../assets/placeholders/nftport.gif"
+import FleekImage from "../assets/placeholders/fleek.gif"
+import IpfsImage from "../assets/placeholders/ipfs.gif"
 
 const backdrop = {
   hidden: { opacity: 0 },
@@ -37,6 +41,20 @@ export const CollectionModal = (props) => {
   const [isPlay, setIsPlay] = useState(false);
   const [isVideo, setIsVideo] = useState(false);
   const videoRef = useRef(null);
+  const [loadingImage, setLoadingImage] = useState(true)
+  const [placeholder, setPlaceholder] = useState("")
+
+  useEffect(() => {
+    fetch(image).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
+    if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
+    if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
+    return setPlaceholder(IpfsImage)
+  }, [setIsModal, image]);
 
   const handlePlay = () => {
     if (videoRef) videoRef.current.play();
@@ -90,7 +108,19 @@ export const CollectionModal = (props) => {
             }
           </>
         ) : (
-          <img src={image} alt="art" onError={() => setIsVideo(true)} />
+          <>
+            {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
+            <LazyLoadImage
+              effect="blur"
+              src={image}
+              alt="art"
+              placeholder={
+                <div></div>
+              }
+              onError={(e) => {setPlaceholder(NoImage)}}
+              afterLoad={() => {setLoadingImage(false)}}
+            />
+          </>
         )}
       </div>
       <Text variant="primary" style={{ fontSize: 20, lineHeight: "27px" }}>
