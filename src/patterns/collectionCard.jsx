@@ -48,7 +48,7 @@ const CollectionCard = (props) => {
 
   const [processContent, setProcessContent] = useState("");
   const [transaction, setTransaction] = useState();
-
+  const [imageUrl, SetImageUrl] = useState("");
   const [isVideo, setIsVideo] = useState(false);
   const [isModal, setIsModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,16 +61,26 @@ const CollectionCard = (props) => {
   const history = useHistory()
   const { userDispatch } = useContext(UserContext);
   useEffect(() => {
-    console.log(image);
     fetch(image).then(response => {
       const contentType = response.headers.get("content-type");
       if (contentType.includes("video")) {
         setIsVideo(true);
       }
     })
-    if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-    if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
-    return setPlaceholder(IpfsImage)
+    if (image.includes('storage.googleapis.com')) {
+      setPlaceholder(NFTPortImage)
+    } else if (image.includes('fleek.co')) {
+      setPlaceholder(FleekImage)
+    } else {
+      setPlaceholder(IpfsImage)
+    }
+    
+    const arr = image.split("url=");
+    if (arr.length > 1) {
+      SetImageUrl(decodeURIComponent(arr[1]))
+    } else {
+      SetImageUrl(image);
+    }
   }, [image, setPlaceholder])
   const initialValues = {
     price: "0",
@@ -121,6 +131,7 @@ const CollectionCard = (props) => {
         ],
       })
       const key = files.length
+      console.log(key)
       try {
         uploadedFile = await fleekStorage.upload({
           apiKey: process.env.REACT_APP_API_KEY,
@@ -483,7 +494,7 @@ const CollectionCard = (props) => {
           {loadingImage && <img className='placeholder' src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={image}
+            src={`https://img-cdn.magiceden.dev/rs:fill:300:300:0:0/plain/${imageUrl}`}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
             onError={() => setPlaceholder(NoImage)}

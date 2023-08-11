@@ -24,7 +24,7 @@ import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
-import { getListing, getDecimals, unatomic, atomic } from "../utils/Bidify";
+import { getListing, getDecimals, unatomic, atomic, isValidUrl } from "../utils/Bidify";
 import { getTokenSymbol } from "../utils/getCurrencySymbol";
 import Web3 from "web3";
 import { baseUrl, BIDIFY, BIT, snowApi, getLogUrl, getSymbol } from "../utils/config";
@@ -48,6 +48,7 @@ const Card = (props) => {
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState();
   const [isVideo, setIsVideo] = useState(false);
+  const [imageUrl, SetImageUrl] = useState("");
   const [symbol, setSymbol] = useState('');
   const [transaction, setTransaction] = useState()
   const [latestDetail, setLatestDetail] = useState(props)
@@ -60,9 +61,20 @@ const Card = (props) => {
         setIsVideo(true);
       }
     })
-    if (imageToDisplay.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-    if (imageToDisplay.includes('fleek.co')) return setPlaceholder(FleekImage)
-    return setPlaceholder(IpfsImage)
+    if (imageToDisplay.includes('storage.googleapis.com')) {
+      setPlaceholder(NFTPortImage)
+    } else if (imageToDisplay.includes('fleek.co')) {
+      setPlaceholder(FleekImage)
+    } else {
+      setPlaceholder(IpfsImage)
+    }
+    
+    const arr = imageToDisplay.split("url=");
+    if (arr.length > 1) {
+      SetImageUrl(decodeURIComponent(arr[1]))
+    } else {
+      SetImageUrl(imageToDisplay);
+    }
   }, [imageToDisplay, setPlaceholder])
   // useEffect(() => {
   //   if (isSuccess) getLists();
@@ -425,7 +437,7 @@ const Card = (props) => {
           {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={imageToDisplay}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:300:300:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={
               <div></div>

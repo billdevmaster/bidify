@@ -44,12 +44,9 @@ const Collection = () => {
     });
     const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
     const results = response.data
-    // console.log('result', results)
-    // setData(results)
     if (results.length === 0) {
       console.log("getting from blockchain")
       const newData = await getDetails()
-      console.log("fetching from chain", newData)
       userDispatch({
         type: "MY_COLLECTIONS",
         payload: { results: newData },
@@ -57,6 +54,7 @@ const Collection = () => {
       await handleUpdate(newData)
     }
     else {
+      console.log("here")
       userDispatch({
         type: "MY_COLLECTIONS",
         payload: { results, isCollectionFetched: true },
@@ -143,21 +141,27 @@ const Collection = () => {
     //   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
     // }
 
-    const fetchWrapper = new FetchWrapper(fetcher, {
-      jsonProxy: (url) => {
-        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      },
-      imageProxy: (url) => {
-        return imageurl(url);
-      },
-      ipfsUrl: (cid, path) => {
-        return ipfsUrl(cid, path);
-      },
-    });
+    const fetchWrapper = new FetchWrapper(fetcher
+      , {
+        jsonProxy: (url) => {
+          return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        },
+        imageProxy: (url) => {
+          return imageurl(url);
+          // return url;
+        },
+        ipfsUrl: (cid, path) => {
+          return ipfsUrl(cid, path);
+        },
+      }
+    );
+    
     const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
-    // console.log("result", result)
+    
+    // const urlParams = new URLSearchParams(result.image);
     const finalResult = {
       ...result,
+      // newImageUrl: imageurl(result.image),
       platform: val?.platform,
       token: val?.token,
       isERC721: result.owner ? true : false,
@@ -167,10 +171,6 @@ const Collection = () => {
   };
 
   const getDetails = async () => {
-    // userDispatch({
-    //   type: "MY_COLLECTIONS",
-    //   payload: { results: undefined },
-    // });
     let getNft;
 
     let results = [];
@@ -182,8 +182,9 @@ const Collection = () => {
           }
         })
         const nfts = response.data.nfts
+        console.log("nfts", nfts)
         for (let i = 0; i < nfts.length; i++) {
-          const nft = nfts[i]
+          const nft = nfts[i];
           if (nft.name) {
             let imageUrl;
             if (nft.cached_file_url) imageUrl = nft.cached_file_url
@@ -210,14 +211,12 @@ const Collection = () => {
       } catch (e) {
         console.log(e.message)
       }
-      console.log(results)
     } else {
       try {
         getNft = await getNFTs();
       } catch (e) {
         console.log(e.message)
       }
-      // console.log("passed get nfts", getNft)
       for (var i = 0; i < getNft?.length; i++) {
         try {
           const res = await getFetchValues(getNft[i]);
@@ -236,9 +235,8 @@ const Collection = () => {
   };
 
   async function getNFTs() {
-    // console.log(chainId)
-    // console.log("before testing", new ethers.providers.Web3Provider(URLS[chainId]))
     const from = account;
+    // const from = "0x8D1F338F8abd714fd09ec13C100A0d7dF693cd5D";
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     const topic = "0x" + from.split("0x")[1].padStart(64, "0")
     let logs = []
@@ -250,7 +248,6 @@ const Collection = () => {
     }
 
     // Get all transfers to us
-    // return console.log(web3.eth)
     else logs = await web3.eth.getPastLogs({
       fromBlock: 0,
       toBlock: "latest",
@@ -270,23 +267,28 @@ const Collection = () => {
     for (let log of logs) {
       // console.log(log)
       if (log.topics[3] !== undefined) {
-        let platform = log.address;
-        let token = log.topics[3];
-        let owner = await new web3.eth.Contract(ERC721.abi, platform).methods
-          .ownerOf(token)
-          .call();
-        if (owner.toLowerCase() !== from.toLowerCase()) {
+        try {
+          let platform = log.address;
+          let token = log.topics[3];
+          
+          let owner = await new web3.eth.Contract(ERC721.abi, platform).methods
+            .ownerOf(token)
+            .call();
+          if (owner.toLowerCase() !== from.toLowerCase()) {
+            continue;
+          }
+  
+          let jointID = platform + token;
+  
+          if (ids[jointID]) {
+            continue;
+          }
+          token = parseInt(token, 16).toString();
+          ids[jointID] = true;
+          res.push({ platform, token });
+        } catch (e) {
           continue;
         }
-
-        let jointID = platform + token;
-
-        if (ids[jointID]) {
-          continue;
-        }
-        token = parseInt(token, 16).toString();
-        ids[jointID] = true;
-        res.push({ platform, token });
       } else {
         continue;
       }
@@ -306,34 +308,35 @@ const Collection = () => {
         "0x" + from.split("0x")[1].padStart(64, "0"),
       ],
     });
-    // console.log("1155 result", logs_1155)
     for (let log of logs_1155) {
       if (log.topics[3] !== undefined) {
-        let platform = log.address;
-        const decodeData = web3.eth.abi.decodeParameters(['uint256', 'uint256'], log.data);
-        let token = web3.utils.toHex(decodeData[0]);
-        let owner = await new web3.eth.Contract(ERC1155.abi, platform).methods
-          .balanceOf(from, decodeData[0])
-          .call();
-        // console.log("owners", owner, platform)
-        if (owner < 1) continue;
-        // if (owner.toLowerCase() !== from.toLowerCase()) {
-        //   continue;
-        // }
-
-        let jointID = platform + token;
-
-        if (ids[jointID]) {
+        try {
+          let platform = log.address;
+          const decodeData = web3.eth.abi.decodeParameters(['uint256', 'uint256'], log.data);
+          let token = web3.utils.toHex(decodeData[0]);
+          let owner = await new web3.eth.Contract(ERC1155.abi, platform).methods
+            .balanceOf(from, decodeData[0])
+            .call();
+          if (owner < 1) continue;
+          // if (owner.toLowerCase() !== from.toLowerCase()) {
+          //   continue;
+          // }
+  
+          let jointID = platform + token;
+  
+          if (ids[jointID]) {
+            continue;
+          }
+          token = token.toString();
+          ids[jointID] = true;
+          res.push({ platform, token });
+        } catch (e) {
           continue;
         }
-        token = token.toString();
-        ids[jointID] = true;
-        res.push({ platform, token });
       } else {
         continue;
       }
     }
-    // console.log(res)
     return res;
   }
 
@@ -377,6 +380,7 @@ const Collection = () => {
     await axios.post(`${baseUrl}/admincollection`, update)
     // console.log('update result', res)
   }
+
   return (
     <>
       <ScreenTemplate>
