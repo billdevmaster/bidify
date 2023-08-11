@@ -29,7 +29,7 @@ import NoImage from "../assets/placeholders/nft-placeholder.svg"
 //IMPORTING UTILITY PACKGAES
 
 import { baseUrl, BIDIFY, getLogUrl, getSymbol, snowApi, URLS } from "../utils/config";
-import { getDecimals, atomic, getListing, unatomic } from "../utils/Bidify";
+import { getDecimals, atomic, getListing, unatomic, isValidUrl } from "../utils/Bidify";
 import { useWeb3React } from "@web3-react/core";
 import { ERC721, ERC1155 } from "../utils/config";
 import { ethers } from "ethers";
@@ -61,12 +61,7 @@ const CollectionCard = (props) => {
   const history = useHistory()
   const { userDispatch } = useContext(UserContext);
   useEffect(() => {
-    fetch(image).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
-      }
-    })
+    
     if (image.includes('storage.googleapis.com')) {
       setPlaceholder(NFTPortImage)
     } else if (image.includes('fleek.co')) {
@@ -76,11 +71,20 @@ const CollectionCard = (props) => {
     }
     
     const arr = image.split("url=");
+    let displayImg = "";
     if (arr.length > 1) {
       SetImageUrl(decodeURIComponent(arr[1]))
+      displayImg = decodeURIComponent(arr[1]);
     } else {
       SetImageUrl(image);
+      displayImg = image;
     }
+    fetch(displayImg).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
   }, [image, setPlaceholder])
   const initialValues = {
     price: "0",
@@ -117,37 +121,37 @@ const CollectionCard = (props) => {
     setProcessContent(
       "Uploading image to the fleek storage"
     );
-    const buffer = await getBase64ImageBuffer(image).catch(e => console.log('error in promise', e))
-    let uploadedFile = {publicUrl: undefined}
-    if (buffer !== undefined) {
-      const files = await fleekStorage.listFiles({
-        apiKey: process.env.REACT_APP_API_KEY,
-        apiSecret: process.env.REACT_APP_API_SECRET,
-        bucket: process.env.REACT_APP_BUCKET,
-        getOptions: [
-          'key',
-          'hash',
-          'publicUrl'
-        ],
-      })
-      const key = files.length
-      console.log(key)
-      try {
-        uploadedFile = await fleekStorage.upload({
-          apiKey: process.env.REACT_APP_API_KEY,
-          apiSecret: process.env.REACT_APP_API_SECRET,
-          bucket: process.env.REACT_APP_BUCKET,
-          key: key.toString(),
-          data: buffer,
-          httpUploadProgressCallback: (event) => {
-            console.log(Math.round(event.loaded / event.total * 100) + '% done');
-          }
-        })
-      } catch (e) {
-        setIsLoading(false);
-        return console.log("err while uploading image", e)
-      }
-    }
+    // const buffer = await getBase64ImageBuffer(image).catch(e => console.log('error in promise', e))
+    // let uploadedFile = {publicUrl: undefined}
+    // if (buffer !== undefined) {
+    //   const files = await fleekStorage.listFiles({
+    //     apiKey: process.env.REACT_APP_API_KEY,
+    //     apiSecret: process.env.REACT_APP_API_SECRET,
+    //     bucket: process.env.REACT_APP_BUCKET,
+    //     getOptions: [
+    //       'key',
+    //       'hash',
+    //       'publicUrl'
+    //     ],
+    //   })
+    //   const key = files.length
+    //   console.log(key)
+    //   try {
+    //     uploadedFile = await fleekStorage.upload({
+    //       apiKey: process.env.REACT_APP_API_KEY,
+    //       apiSecret: process.env.REACT_APP_API_SECRET,
+    //       bucket: process.env.REACT_APP_BUCKET,
+    //       key: key.toString(),
+    //       data: buffer,
+    //       httpUploadProgressCallback: (event) => {
+    //         console.log(Math.round(event.loaded / event.total * 100) + '% done');
+    //       }
+    //     })
+    //   } catch (e) {
+    //     setIsLoading(false);
+    //     return console.log("err while uploading image", e)
+    //   }
+    // }
     // return console.log(uploadedFile)
     // return setTimeout(() => {
     //   setIsSuccess(true)
@@ -162,7 +166,7 @@ const CollectionCard = (props) => {
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
-      await list({ currency, platform, token, price, endingPrice, days, image: uploadedFile.publicUrl });
+      await list({ currency, platform, token, price, endingPrice, days, image: "uploadedFile.publicUrl" });
       const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       const results = response.data
       userDispatch({
@@ -225,6 +229,7 @@ const CollectionCard = (props) => {
           .setApprovalForAll(BIDIFY.address[chainId], true)
     await tx.wait()
   }
+
   const getLogs = async () => {
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     const topic0 =
@@ -494,7 +499,7 @@ const CollectionCard = (props) => {
           {loadingImage && <img className='placeholder' src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={`https://img-cdn.magiceden.dev/rs:fill:300:300:0:0/plain/${imageUrl}`}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
             onError={() => setPlaceholder(NoImage)}

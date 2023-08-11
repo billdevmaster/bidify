@@ -9,6 +9,7 @@ import "../styles/patterns/modal.scss";
 //IMPORTING COMPONENTS
 
 import { Text, Button } from "../components";
+import { isValidUrl } from "../utils/Bidify";
 
 //IMPORTING MEDIA ASSETS
 
@@ -40,17 +41,31 @@ export const CollectionModal = (props) => {
 
   const [isPlay, setIsPlay] = useState(false);
   const [isVideo, setIsVideo] = useState(false);
+  const [imageUrl, SetImageUrl] = useState("");
   const videoRef = useRef(null);
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
 
   useEffect(() => {
-    fetch(image).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
-      }
-    })
+    
+    const arr = image.split("url=");
+    if (arr.length > 1) {
+      SetImageUrl(decodeURIComponent(arr[1]))
+      fetch(decodeURIComponent(arr[1])).then(response => {
+        const contentType = response.headers.get("content-type");
+        if (contentType.includes("video")) {
+          setIsVideo(true);
+        }
+      });
+    } else {
+      SetImageUrl(image);
+      fetch(image).then(response => {
+        const contentType = response.headers.get("content-type");
+        if (contentType.includes("video")) {
+          setIsVideo(true);
+        }
+      });
+    }
     if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
     if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
     return setPlaceholder(IpfsImage)
@@ -84,7 +99,7 @@ export const CollectionModal = (props) => {
 
   const renderBody = (
     <div className="modal_body">
-      <div className="image">
+      <div className="image text-center">
         {isVideo ? (
           <>
             <video ref={videoRef} loop>
@@ -112,7 +127,7 @@ export const CollectionModal = (props) => {
             {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
             <LazyLoadImage
               effect="blur"
-              src={image}
+              src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:440:440:0:0/plain/${imageUrl}` : imageUrl}
               alt="art"
               placeholder={
                 <div></div>

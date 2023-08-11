@@ -55,12 +55,7 @@ const Card = (props) => {
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
   useEffect(() => {
-    fetch(imageToDisplay).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
-      }
-    })
+    
     if (imageToDisplay.includes('storage.googleapis.com')) {
       setPlaceholder(NFTPortImage)
     } else if (imageToDisplay.includes('fleek.co')) {
@@ -70,11 +65,21 @@ const Card = (props) => {
     }
     
     const arr = imageToDisplay.split("url=");
+    let displayImg = "";
     if (arr.length > 1) {
       SetImageUrl(decodeURIComponent(arr[1]))
+      displayImg = decodeURIComponent(arr[1]);
     } else {
       SetImageUrl(imageToDisplay);
+      displayImg = imageToDisplay;
     }
+    fetch(displayImg).then(response => {
+      const contentType = response.headers.get("content-type");
+      if (contentType.includes("video")) {
+        setIsVideo(true);
+      }
+    })
+
   }, [imageToDisplay, setPlaceholder])
   // useEffect(() => {
   //   if (isSuccess) getLists();
