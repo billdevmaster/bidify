@@ -5,7 +5,7 @@ import Web3 from "web3";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import axios from "axios"
-import fleekStorage from '@fleekhq/fleek-storage-js'
+// import fleekStorage from '@fleekhq/fleek-storage-js'
 
 //IMPORTING STYLESHEET
 
@@ -34,7 +34,7 @@ import { useWeb3React } from "@web3-react/core";
 import { ERC721, ERC1155 } from "../utils/config";
 import { ethers } from "ethers";
 import { useHistory } from "react-router-dom";
-import { getBase64ImageBuffer } from "../utils/NFTFetcher";
+// import { getBase64ImageBuffer } from "../utils/NFTFetcher";
 import { UserContext } from "../store/contexts";
 
 
