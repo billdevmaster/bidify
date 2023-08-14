@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Web3 from "web3";
@@ -35,11 +35,11 @@ import { ERC721, ERC1155 } from "../utils/config";
 import { ethers } from "ethers";
 import { useHistory } from "react-router-dom";
 // import { getBase64ImageBuffer } from "../utils/NFTFetcher";
-import { UserContext } from "../store/contexts";
+// import { UserContext } from "../store/contexts";
 
 
 const CollectionCard = (props) => {
-  const { name, description, image, platform, token, getDetails, isERC721, getFetchValues } = props;
+  const { name, description, image, platform, token, getDetails, isERC721, getFetchValues, token_uri } = props;
 
   const { chainId, account, library } = useWeb3React();
   const videoRef = useRef(null);
@@ -59,7 +59,7 @@ const CollectionCard = (props) => {
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
   const history = useHistory()
-  const { userDispatch } = useContext(UserContext);
+  // const { userDispatch } = useContext(UserContext);
   useEffect(() => {
     
     if (image.includes('storage.googleapis.com')) {
@@ -69,22 +69,27 @@ const CollectionCard = (props) => {
     } else {
       setPlaceholder(IpfsImage)
     }
-    
-    const arr = image.split("url=");
-    let displayImg = "";
-    if (arr.length > 1) {
-      SetImageUrl(decodeURIComponent(arr[1]))
-      displayImg = decodeURIComponent(arr[1]);
-    } else {
-      SetImageUrl(image);
-      displayImg = image;
-    }
-    fetch(displayImg).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
+    const setImage = async () => {
+      const arr = image.split("url=");
+      let displayImg = "";
+      if (arr.length > 1) {
+        SetImageUrl(decodeURIComponent(arr[1]))
+        displayImg = decodeURIComponent(arr[1]);
+      } else {
+        SetImageUrl(image);
+        displayImg = image;
       }
-    })
+      try {
+        const response = await fetch(displayImg);
+        const contentType = response.headers.get("content-type");
+        if (contentType.includes("video")) {
+          setIsVideo(true);
+        }
+      } catch (e) {
+        setIsVideo(false);
+      }
+    }
+    setImage();
   }, [image, setPlaceholder])
   const initialValues = {
     price: "0",
@@ -118,9 +123,9 @@ const CollectionCard = (props) => {
   const onSubmit = async (values, onSubmitProps) => {
     setIsModal(false);
     setIsLoading(true);
-    setProcessContent(
-      "Uploading image to the fleek storage"
-    );
+    // setProcessContent(
+    //   "Uploading image to the fleek storage"
+    // );
     // const buffer = await getBase64ImageBuffer(image).catch(e => console.log('error in promise', e))
     // let uploadedFile = {publicUrl: undefined}
     // if (buffer !== undefined) {
@@ -162,17 +167,18 @@ const CollectionCard = (props) => {
       "Please allow https://bidify.org permission within your wallet when prompted, there will be a small fee for this…"
     );
     try {
+      // check if approved already.
       await signList({ platform, token, isERC721 });
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
       await list({ currency, platform, token, price, endingPrice, days, image: "uploadedFile.publicUrl" });
-      const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
-      const results = response.data
-      userDispatch({
-        type: "MY_COLLECTIONS",
-        payload: { results, isCollectionFetched: true },
-      });
+      // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
+      // const results = response.data
+      // userDispatch({
+      //   type: "MY_COLLECTIONS",
+      //   payload: { results, isCollectionFetched: true },
+      // });
       setIsLoading(false);
       setIsSuccess(true);
     } catch (error) {
@@ -193,38 +199,45 @@ const CollectionCard = (props) => {
     token,
     isERC721,
   }) {
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
+    // let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    // let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    // try {
+    //   const { data } = await axios({
+    //     method: 'get',
+    //     url: 'https://gasstation-mainnet.matic.network/v2'
+    //   })
+    //   maxFeePerGas = ethers.utils.parseUnits(
+    //     Math.ceil(data.fast.maxFee) + '',
+    //     'gwei'
+    //   )
+    //   maxPriorityFeePerGas = ethers.utils.parseUnits(
+    //     Math.ceil(data.fast.maxPriorityFee) + '',
+    //     'gwei'
+    //   )
+    // } catch {
+    //   // ignore
+    // }
     // const web3 = new Web3(window.ethereum);
     const erc721 = new ethers.Contract(platform, ERC721.abi, library.getSigner())
     const erc1155 = new ethers.Contract(platform, ERC1155.abi, library.getSigner())
-    let tx
-    if (isERC721)
+    let tx;
+    const gasLimit = 1000000;
+    // if (isERC721) {
+    //   console.log(token)
+    //   console.log(platform)
+
+    //   const approvedAddress = await erc721.getApproved(token, {gasLimit});
+    // }
+    if (!isERC721)
       tx = chainId === 137 ?
         await erc721
-          .approve(BIDIFY.address[chainId], token, { maxFeePerGas, maxPriorityFeePerGas }) :
+          .approve(BIDIFY.address[chainId], token, {gasLimit}) :
         await erc721
           .approve(BIDIFY.address[chainId], token)
     else
       tx = chainId === 137 ?
         await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true, { maxFeePerGas, maxPriorityFeePerGas }) :
+          .setApprovalForAll(BIDIFY.address[chainId], true, { gasLimit }) :
         await erc1155
           .setApprovalForAll(BIDIFY.address[chainId], true)
     await tx.wait()
@@ -251,7 +264,8 @@ const CollectionCard = (props) => {
     }
 
     return logs.length;
-  };
+  }
+  
   async function list({
     currency,
     platform,
@@ -273,24 +287,25 @@ const CollectionCard = (props) => {
     // return token;
     const tokenNum = isERC721 ? token : new Web3(window.ethereum).utils.hexToNumberString(token);
     // return console.log("before list", atomic(price.toString(), decimals).toString())
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
+    // let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    // let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    // try {
+    //   const { data } = await axios({
+    //     method: 'get',
+    //     url: 'https://gasstation-mainnet.matic.network/v2'
+    //   })
+    //   maxFeePerGas = ethers.utils.parseUnits(
+    //     Math.ceil(data.fast.maxFee) + '',
+    //     'gwei'
+    //   )
+    //   maxPriorityFeePerGas = ethers.utils.parseUnits(
+    //     Math.ceil(data.fast.maxPriorityFee) + '',
+    //     'gwei'
+    //   )
+    // } catch {
+    //   // ignore
+    // }
+    const gasLimit = 1000000;
     try {
       const totalCount = await getLogs()
       const tx = chainId === 137 ? await Bidify
@@ -303,7 +318,7 @@ const CollectionCard = (props) => {
           Number(days),
           isERC721,
           "0x0000000000000000000000000000000000000000",
-          { maxFeePerGas, maxPriorityFeePerGas }
+          { gasLimit }
         ) :
         await Bidify
           .list(
@@ -410,7 +425,7 @@ const CollectionCard = (props) => {
     }
     else detail = await getListing(id)
     const fetchedValue = await getFetchValues(detail)
-    return { ...fetchedValue, ...detail, network: chainId }
+    return { ...fetchedValue, ...detail, network: chainId, image: imageUrl, metadataUrl: token_uri }
 
   }
 
@@ -499,7 +514,7 @@ const CollectionCard = (props) => {
           {loadingImage && <img className='placeholder' src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/${imageUrl}` : imageUrl}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:200:200:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
             onError={() => setPlaceholder(NoImage)}

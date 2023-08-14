@@ -24,6 +24,7 @@
     "framer-motion": "^4.1.17",
     "ipfs-api": "^26.1.2",
     "lodash": "^4.17.21",
+    "moralis": "^2.22.4",
     "node-sass": "^5.0.0",
     "react": "^17.0.2",
     "react-confetti": "^6.1.0",

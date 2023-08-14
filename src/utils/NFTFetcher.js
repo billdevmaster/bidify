@@ -1,5 +1,7 @@
 import { FetchWrapper } from "use-nft";
 import { ethers, Contract } from "ethers";
+import axios from 'axios';
+import { baseUrl } from "./config";
 var request = require("request").defaults({ encoding: null });
 
 export const getNfts = async (platform, token) => {
@@ -55,4 +57,9 @@ export const getBase64ImageBuffer = (imgUrl) => {
         }
       );
     });
+}
+
+export const getNftsByMoralis = async (address, cursor, chainId) => {
+  const resp = await axios.get(`${baseUrl}/fetchWalletNfts`, { params: { address, cursor, chainId } });
+  return resp.data;
 }

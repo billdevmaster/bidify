@@ -38,7 +38,6 @@ const modal = {
 
 export const CollectionModal = (props) => {
   const { isModal, setIsModal, image, name, owner, renderCreateForm } = props;
-
   const [isPlay, setIsPlay] = useState(false);
   const [isVideo, setIsVideo] = useState(false);
   const [imageUrl, SetImageUrl] = useState("");
@@ -47,25 +46,27 @@ export const CollectionModal = (props) => {
   const [placeholder, setPlaceholder] = useState("")
 
   useEffect(() => {
-    
-    const arr = image.split("url=");
-    if (arr.length > 1) {
-      SetImageUrl(decodeURIComponent(arr[1]))
-      fetch(decodeURIComponent(arr[1])).then(response => {
+    const setImage = async () => {
+      const arr = image.split("url=");
+      let displayImg = "";
+      if (arr.length > 1) {
+        SetImageUrl(decodeURIComponent(arr[1]))
+        displayImg = decodeURIComponent(arr[1]);
+      } else {
+        SetImageUrl(image);
+        displayImg = image;
+      }
+      try {
+        const response = await fetch(displayImg);
         const contentType = response.headers.get("content-type");
         if (contentType.includes("video")) {
           setIsVideo(true);
         }
-      });
-    } else {
-      SetImageUrl(image);
-      fetch(image).then(response => {
-        const contentType = response.headers.get("content-type");
-        if (contentType.includes("video")) {
-          setIsVideo(true);
-        }
-      });
+      } catch (e) {
+        setIsVideo(false);
+      }
     }
+    setImage();
     if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
     if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
     return setPlaceholder(IpfsImage)
@@ -127,7 +128,7 @@ export const CollectionModal = (props) => {
             {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
             <LazyLoadImage
               effect="blur"
-              src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:440:440:0:0/plain/${imageUrl}` : imageUrl}
+              src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:250:250:0:0/plain/${imageUrl}` : imageUrl}
               alt="art"
               placeholder={
                 <div></div>

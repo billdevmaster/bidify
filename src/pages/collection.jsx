@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { useWeb3React } from "@web3-react/core";
 import { FetchWrapper } from "use-nft";
 import Web3 from "web3";
@@ -25,65 +25,116 @@ import { UserContext } from "../store/contexts";
 
 import { ERC721, ERC1155, URLS, baseUrl, snowApi, getLogUrl } from "../utils/config";
 import axios from "axios";
+import { getNftsByMoralis } from "../utils/NFTFetcher";
 
 const Collection = () => {
   //INITIALIZING HOOKS
 
-  const { userState, userDispatch } = useContext(UserContext);
+  const { userDispatch } = useContext(UserContext);
 
   const { active, chainId, account } = useWeb3React();
 
   // const [update, setUpdate] = useState([])
 
-  // const [data, setData] = useState([])
+  const [nfts, setNfts] = useState([]);
+  const [cursor, setCursor] = useState(null);
+  const [chainChanged, setChainChanged] = useState(false);
   //HANDLING METHODS
   const getCollection = async () => {
     userDispatch({
       type: "MY_COLLECTIONS",
       payload: { results: undefined },
     });
-    const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
-    const results = response.data
-    if (results.length === 0) {
-      console.log("getting from blockchain")
-      const newData = await getDetails()
-      userDispatch({
-        type: "MY_COLLECTIONS",
-        payload: { results: newData },
-      });
-      await handleUpdate(newData)
+    if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
+      const resp = await getNftsByMoralis(account, cursor, chainId);
+      setCursor(resp.cursor)
+      let tmpNfts = [...nfts];
+      
+      for (let i = 0; i < resp.nfts.length; i++) {
+        const retdata = resp.nfts[i];
+        tmpNfts.push(retdata);
+      }
+      setNfts([ ...tmpNfts ]);
+      
+      // while (cursor != null) {
+      //   const resp = await getNftsByMoralis("0xd8da6bf26964af9d7eed9e03e53415d37aa96045", cursor, chainId);
+      //   cursor = resp.cursor;
+      //   console.log(cursor);
+      //   if (resp.nfts) {
+      //     let tmpNfts = [...nfts];
+      //     for (let i = 0; i < resp.nfts.length; i++) {
+      //       const retdata = resp.nfts[i];
+      //       tmpNfts.push(retdata);
+      //     }
+      //     setNfts([ ...tmpNfts ]);
+      //   }
+      // }
+    } else {
+      const newData = await getDetails();
+      console.log(newData);
     }
-    else {
-      console.log("here")
-      userDispatch({
-        type: "MY_COLLECTIONS",
-        payload: { results, isCollectionFetched: true },
-      });
-      // setTimeout(async() => {
-      await updateDatabase(results)
-      // }, 3000)
+    setChainChanged(false);
+    // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
+    // const results = response.data
+    // if (results.length === 0) {
+    //   console.log("getting from blockchain")
+    //   const newData = await getDetails()
+    //   userDispatch({
+    //     type: "MY_COLLECTIONS",
+    //     payload: { results: newData },
+    //   });
+    //   await handleUpdate(newData)
+    // }
+    // else {
+    //   console.log("here")
+    //   userDispatch({
+    //     type: "MY_COLLECTIONS",
+    //     payload: { results, isCollectionFetched: true },
+    //   });
+    //   // setTimeout(async() => {
+    //   await updateDatabase(results)
+    //   // }, 3000)
 
+    // }
+  }
+
+  const loadNftsFromMoralis = async () => {
+    const resp = await getNftsByMoralis(account, cursor, chainId);
+    setCursor(resp.cursor)
+    let tmpNfts = [...nfts];
+    
+    for (let i = 0; i < resp.nfts.length; i++) {
+      const retdata = resp.nfts[i];
+      tmpNfts.push(retdata);
     }
+    setNfts([ ...tmpNfts ]);
+  }
 
-  }
-  const updateDatabase = async (results) => {
-    // console.log("before updateing", results, results.length)
-    console.log("updating database")
-    const newData = await getDetails()
-    console.log("updated database")
-    // console.log("comparing", newData, newData.length)
-    // if(newData.length === )
-    // const dataToAdd = newData.filter(nft => results.includes(nft))
-    // const dataToRemove = results.filter(nft => newData.includes(nft))
-    // console.log(dataToAdd, dataToRemove)
-    await axios.put(`${baseUrl}/admincollection`, { data: newData, chainId, owner: account })
-    // if(dataToAdd.length) await axios.post(`${baseUrl}/admincollection`, dataToAdd)
-    // if(dataToRemove.length) await axios.delete(`${baseUrl}/admincollection`, dataToRemove)
-  }
+  useEffect(() => {
+    if (nfts.length === 0 && chainChanged) {
+      getCollection();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nfts])
+
+  // const updateDatabase = async (results) => {
+  //   // console.log("before updateing", results, results.length)
+  //   console.log("updating database")
+  //   const newData = await getDetails()
+  //   console.log("updated database")
+  //   // console.log("comparing", newData, newData.length)
+  //   // if(newData.length === )
+  //   // const dataToAdd = newData.filter(nft => results.includes(nft))
+  //   // const dataToRemove = results.filter(nft => newData.includes(nft))
+  //   // console.log(dataToAdd, dataToRemove)
+  //   await axios.put(`${baseUrl}/admincollection`, { data: newData, chainId, owner: account })
+  //   // if(dataToAdd.length) await axios.post(`${baseUrl}/admincollection`, dataToAdd)
+  //   // if(dataToRemove.length) await axios.delete(`${baseUrl}/admincollection`, dataToRemove)
+  // }
   useEffect(() => {
     if (account !== undefined) {
-      // getDetails();
-      getCollection();
+      setNfts([]);
+      setChainChanged(true);
     } else {
       console.log("connect wallet to view collections");
     }
@@ -124,18 +175,18 @@ const Collection = () => {
       return `https://dweb.link/ipfs/${cid}${path}`;
     }
 
-    function imageurl(url) {
-      // const string = url;
-      const check = url.substr(16, 4);
-      if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
-      if(url.includes('https://ipfs.io/ipfs/')) return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-      if (check === "ipfs") {
-        const manipulated = url.substr(16, 16 + 45);
-        return "https://dweb.link/" + manipulated;
-      } else {
-        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      }
-    }
+    // function imageurl(url) {
+    //   // const string = url;
+    //   const check = url.substr(16, 4);
+    //   if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
+    //   if(url.includes('https://ipfs.io/ipfs/')) return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    //   if (check === "ipfs") {
+    //     const manipulated = url.substr(16, 16 + 45);
+    //     return "https://dweb.link/" + manipulated;
+    //   } else {
+    //     return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    //   }
+    // }
 
     // function jsonurl(url) {
     //   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -147,8 +198,8 @@ const Collection = () => {
           return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
         },
         imageProxy: (url) => {
-          return imageurl(url);
-          // return url;
+          // return imageurl(url);
+          return url;
         },
         ipfsUrl: (cid, path) => {
           return ipfsUrl(cid, path);
@@ -174,44 +225,6 @@ const Collection = () => {
     let getNft;
 
     let results = [];
-    if (chainId === 137) {
-      try {
-        const response = await axios.get(`https://api.nftport.xyz/v0/accounts/${account}?chain=polygon&page_size=50&include=metadata`, {
-          headers: {
-            Authorization: 'e2027ff8-0b63-4800-9429-fdfe627a8f63'
-          }
-        })
-        const nfts = response.data.nfts
-        console.log("nfts", nfts)
-        for (let i = 0; i < nfts.length; i++) {
-          const nft = nfts[i];
-          if (nft.name) {
-            let imageUrl;
-            if (nft.cached_file_url) imageUrl = nft.cached_file_url
-            else {
-              if (nft.file_url.includes('ipfs://')) imageUrl = nft.file_url.replace('ipfs://', 'https://ipfs.io/ipfs/')
-              else imageUrl = nft.file_url
-            }
-            results.push({
-              description: nft.description,
-              image: imageUrl,
-              isERC721: true,
-              metadataUrl: nft.metadata_url,
-              name: nft.name,
-              network: 137,
-              owner: account,
-              platform: nft.contract_address,
-              token: nft.token_id
-            })
-          } else {
-            const res = await getFetchValues({ platform: nft.contract_address, token: nft.token_id});
-            results.push(res);
-          }
-        }
-      } catch (e) {
-        console.log(e.message)
-      }
-    } else {
       try {
         getNft = await getNFTs();
       } catch (e) {
@@ -225,7 +238,6 @@ const Collection = () => {
           console.log(error)
         }
       }
-    }
     // setUpdate(results.map(item => { return { ...item, network: chainId } }))
     userDispatch({
       type: "MY_COLLECTIONS",
@@ -235,8 +247,8 @@ const Collection = () => {
   };
 
   async function getNFTs() {
+    // const from = account;
     const from = account;
-    // const from = "0x8D1F338F8abd714fd09ec13C100A0d7dF693cd5D";
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     const topic = "0x" + from.split("0x")[1].padStart(64, "0")
     let logs = []
@@ -342,16 +354,22 @@ const Collection = () => {
 
   const renderCards = (
     <div className="card_wrapper">
-      {userState?.myCollections?.map((lists, index) => {
+      {nfts?.map((lists, index) => {
         return (
           <CollectionCard
             {...lists}
-            getDetails={getCollection}
+            getDetails={() => { }}
             getFetchValues={getFetchValues}
             key={index.toString()}
           />
         );
       })}
+
+      {cursor && (
+        <>
+          <button onClick={loadNftsFromMoralis}>show more</button>
+        </>
+      )}
     </div>
   );
 
@@ -361,8 +379,8 @@ const Collection = () => {
         title="My NFTs"
         description="view and list your NFTs for auction"
       />
-      {!active ? <NoArtifacts title="Bidify is not connected to Ethereum." /> : userState?.myCollections ? (
-        userState?.myCollections?.length > 0 ? (
+      {!active ? <NoArtifacts title="Bidify is not connected to Ethereum." /> : nfts ? (
+        nfts?.length > 0 ? (
           <>
             {renderCards}
           </>
