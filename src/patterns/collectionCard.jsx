@@ -428,7 +428,8 @@ const CollectionCard = (props) => {
     }
     else detail = await getListing(id)
     const fetchedValue = await getFetchValues(detail)
-    return { ...fetchedValue, ...detail, network: chainId, image: imageUrl, metadataUrl: token_uri }
+    const { owner } = fetchedValue;
+    return { owner, ...detail, network: chainId, image: imageUrl, metadataUrl: token_uri, name, token, platform, isERC721 }
 
   }
 

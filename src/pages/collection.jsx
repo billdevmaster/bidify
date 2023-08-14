@@ -196,7 +196,6 @@ const Collection = () => {
     );
     
     const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
-    
     // const urlParams = new URLSearchParams(result.image);
     const finalResult = {
       ...result,
