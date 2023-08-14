@@ -225,14 +225,9 @@ const CollectionCard = (props) => {
     const erc1155 = new ethers.Contract(platform, ERC1155.abi, library.getSigner())
     let tx;
     const gasLimit = 1000000;
-    console.log(token)
-    console.log(platform)
-    if (isERC721) {
-
-      const approvedAddress = await erc721.getApproved(token, {gasLimit});
-    } else {
+    
+    if (!isERC721) {
       const isApproved = await erc1155.isApprovedForAll(account, BIDIFY.address[chainId])
-      console.log("isApproved", isApproved);
       if (!isApproved) {
         tx = chainId === 137 ?
         await erc1155
