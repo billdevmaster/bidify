@@ -446,6 +446,8 @@ export async function list(
   { currency, platform, token, price, days, allowMarketplace = false },
   account
 ) {
+  console.log(account);
+  console.log(allowMarketplace);
   let decimals = await getDecimals(currency);
 
   if (!currency) {

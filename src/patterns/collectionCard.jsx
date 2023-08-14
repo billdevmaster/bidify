@@ -172,6 +172,9 @@ const CollectionCard = (props) => {
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
+      console.log(price)
+      console.log(endingPrice)
+      console.log(days)
       await list({ currency, platform, token, price, endingPrice, days, image: "uploadedFile.publicUrl" });
       // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       // const results = response.data
@@ -222,24 +225,29 @@ const CollectionCard = (props) => {
     const erc1155 = new ethers.Contract(platform, ERC1155.abi, library.getSigner())
     let tx;
     const gasLimit = 1000000;
-    // if (isERC721) {
-    //   console.log(token)
-    //   console.log(platform)
+    console.log(token)
+    console.log(platform)
+    if (isERC721) {
 
-    //   const approvedAddress = await erc721.getApproved(token, {gasLimit});
-    // }
-    if (!isERC721)
+      const approvedAddress = await erc721.getApproved(token, {gasLimit});
+    } else {
+      const isApproved = await erc1155.isApprovedForAll(account, BIDIFY.address[chainId])
+      console.log("isApproved", isApproved);
+      if (!isApproved) {
+        tx = chainId === 137 ?
+        await erc1155
+          .setApprovalForAll(BIDIFY.address[chainId], true, { gasLimit }) :
+        await erc1155
+          .setApprovalForAll(BIDIFY.address[chainId], true)
+      }
+    }
+    if (isERC721) {
       tx = chainId === 137 ?
         await erc721
           .approve(BIDIFY.address[chainId], token, {gasLimit}) :
         await erc721
           .approve(BIDIFY.address[chainId], token)
-    else
-      tx = chainId === 137 ?
-        await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true, { gasLimit }) :
-        await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true)
+    }
     await tx.wait()
   }
 
@@ -285,7 +293,7 @@ const CollectionCard = (props) => {
       library.getSigner()
     );
     // return token;
-    const tokenNum = isERC721 ? token : new Web3(window.ethereum).utils.hexToNumberString(token);
+    const tokenNum = token;
     // return console.log("before list", atomic(price.toString(), decimals).toString())
     // let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
     // let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei

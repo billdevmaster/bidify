@@ -55,47 +55,32 @@ const Collection = () => {
         tmpNfts.push(retdata);
       }
       setNfts([ ...tmpNfts ]);
-      
-      // while (cursor != null) {
-      //   const resp = await getNftsByMoralis("0xd8da6bf26964af9d7eed9e03e53415d37aa96045", cursor, chainId);
-      //   cursor = resp.cursor;
-      //   console.log(cursor);
-      //   if (resp.nfts) {
-      //     let tmpNfts = [...nfts];
-      //     for (let i = 0; i < resp.nfts.length; i++) {
-      //       const retdata = resp.nfts[i];
-      //       tmpNfts.push(retdata);
-      //     }
-      //     setNfts([ ...tmpNfts ]);
-      //   }
-      // }
     } else {
-      const newData = await getDetails();
-      console.log(newData);
+       const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
+      const results = response.data
+      if (results.length === 0) {
+        console.log("getting from blockchain")
+        const newData = await getDetails()
+        userDispatch({
+          type: "MY_COLLECTIONS",
+          payload: { results: newData },
+        });
+        await handleUpdate(newData)
+      }
+      else {
+        console.log("here")
+        userDispatch({
+          type: "MY_COLLECTIONS",
+          payload: { results, isCollectionFetched: true },
+        });
+        // setTimeout(async() => {
+        await updateDatabase(results)
+        // }, 3000)
+
+      }
     }
     setChainChanged(false);
-    // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
-    // const results = response.data
-    // if (results.length === 0) {
-    //   console.log("getting from blockchain")
-    //   const newData = await getDetails()
-    //   userDispatch({
-    //     type: "MY_COLLECTIONS",
-    //     payload: { results: newData },
-    //   });
-    //   await handleUpdate(newData)
-    // }
-    // else {
-    //   console.log("here")
-    //   userDispatch({
-    //     type: "MY_COLLECTIONS",
-    //     payload: { results, isCollectionFetched: true },
-    //   });
-    //   // setTimeout(async() => {
-    //   await updateDatabase(results)
-    //   // }, 3000)
-
-    // }
+   
   }
 
   const loadNftsFromMoralis = async () => {
@@ -117,20 +102,20 @@ const Collection = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nfts])
 
-  // const updateDatabase = async (results) => {
-  //   // console.log("before updateing", results, results.length)
-  //   console.log("updating database")
-  //   const newData = await getDetails()
-  //   console.log("updated database")
-  //   // console.log("comparing", newData, newData.length)
-  //   // if(newData.length === )
-  //   // const dataToAdd = newData.filter(nft => results.includes(nft))
-  //   // const dataToRemove = results.filter(nft => newData.includes(nft))
-  //   // console.log(dataToAdd, dataToRemove)
-  //   await axios.put(`${baseUrl}/admincollection`, { data: newData, chainId, owner: account })
-  //   // if(dataToAdd.length) await axios.post(`${baseUrl}/admincollection`, dataToAdd)
-  //   // if(dataToRemove.length) await axios.delete(`${baseUrl}/admincollection`, dataToRemove)
-  // }
+  const updateDatabase = async (results) => {
+    // console.log("before updateing", results, results.length)
+    console.log("updating database")
+    const newData = await getDetails()
+    console.log("updated database")
+    // console.log("comparing", newData, newData.length)
+    // if(newData.length === )
+    // const dataToAdd = newData.filter(nft => results.includes(nft))
+    // const dataToRemove = results.filter(nft => newData.includes(nft))
+    // console.log(dataToAdd, dataToRemove)
+    await axios.put(`${baseUrl}/admincollection`, { data: newData, chainId, owner: account })
+    // if(dataToAdd.length) await axios.post(`${baseUrl}/admincollection`, dataToAdd)
+    // if(dataToRemove.length) await axios.delete(`${baseUrl}/admincollection`, dataToRemove)
+  }
   useEffect(() => {
     if (account !== undefined) {
       setNfts([]);
@@ -175,18 +160,18 @@ const Collection = () => {
       return `https://dweb.link/ipfs/${cid}${path}`;
     }
 
-    // function imageurl(url) {
-    //   // const string = url;
-    //   const check = url.substr(16, 4);
-    //   if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
-    //   if(url.includes('https://ipfs.io/ipfs/')) return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-    //   if (check === "ipfs") {
-    //     const manipulated = url.substr(16, 16 + 45);
-    //     return "https://dweb.link/" + manipulated;
-    //   } else {
-    //     return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    //   }
-    // }
+    function imageurl(url) {
+      // const string = url;
+      const check = url.substr(16, 4);
+      if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
+      if(url.includes('https://ipfs.io/ipfs/')) return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      if (check === "ipfs") {
+        const manipulated = url.substr(16, 16 + 45);
+        return "https://dweb.link/" + manipulated;
+      } else {
+        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      }
+    }
 
     // function jsonurl(url) {
     //   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
@@ -198,8 +183,11 @@ const Collection = () => {
           return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
         },
         imageProxy: (url) => {
-          // return imageurl(url);
-          return url;
+          if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
+            return url;
+          } else {
+            return imageurl(url);
+          }
         },
         ipfsUrl: (cid, path) => {
           return ipfsUrl(cid, path);
