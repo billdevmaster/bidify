@@ -79,7 +79,7 @@ const DetailsPage = () => {
     if (data?.length === 0) return;
     setLatestDetail(data[0])
     getTransferHistory()
-    const image = data[0].image_cache ? data[0].image_cache : data[0].image
+    const image = data[0].image
     fetch(image).then(response => {
       const contentType = response.headers.get("content-type");
       if (contentType.includes("video")) {
@@ -659,7 +659,7 @@ const DetailsPage = () => {
   const renderImage = (
     <>
       {data?.map(({ image, image_cache }, index) => {
-        const imageToDisplay = image_cache ? image_cache : image
+        const imageToDisplay = image
         return (
           <div className="image" key={index}>
             {isVideo ? (
