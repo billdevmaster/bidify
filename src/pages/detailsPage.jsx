@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Fragment, useRef, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { atomic, getDecimals, getListing, unatomic } from "../utils/Bidify";
+import { atomic, getDecimals, getListing, unatomic, isValidUrl } from "../utils/Bidify";
 import { FetchWrapper } from "use-nft";
 import Web3 from "web3";
 import Countdown from "react-countdown";
@@ -74,21 +74,37 @@ const DetailsPage = () => {
   const [latestDetail, setLatestDetail] = useState()
   const [transaction, setTransaction] = useState()
   const { userDispatch } = useContext(UserContext);
+  const [imageUrl, SetImageUrl] = useState("");
 
   useEffect(() => {
     if (data?.length === 0) return;
     setLatestDetail(data[0])
     getTransferHistory()
-    const image = data[0].image
-    fetch(image).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
+    const setImage = async () => {
+      const image = data[0].image
+      const arr = image.split("url=");
+      let displayImg = "";
+      if (arr.length > 1) {
+        SetImageUrl(decodeURIComponent(arr[1]))
+        displayImg = decodeURIComponent(arr[1]);
+      } else {
+        SetImageUrl(image);
+        displayImg = image;
       }
-    })
-    if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-    if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
-    return setPlaceholder(IpfsImage)
+      try {
+        const response = await fetch(displayImg);
+        const contentType = response.headers.get("content-type");
+        if (contentType.includes("video")) {
+          setIsVideo(true);
+        }
+      } catch (e) {
+        setIsVideo(false);
+      }
+      if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
+      if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
+      return setPlaceholder(IpfsImage)
+    }
+    setImage();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, setPlaceholder])
   // const isUser = account?.toLocaleLowerCase() === creator?.toLocaleLowerCase();
@@ -689,7 +705,7 @@ const DetailsPage = () => {
                 {loadingImage && <img src={placeholder} alt="" />}
                 <LazyLoadImage
                   effect="blur"
-                  src={imageToDisplay}
+                  src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/${imageUrl}` : imageUrl}
                   alt="art"
                   placeholder={
                     <div></div>
