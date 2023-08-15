@@ -37,8 +37,13 @@ const Collection = () => {
   // const [update, setUpdate] = useState([])
 
   const [nfts, setNfts] = useState([]);
+  const [refresh, setRefresh] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [chainChanged, setChainChanged] = useState(false);
+
+  const flipRefresh = () => {
+    setRefresh(!refresh);
+  }
   //HANDLING METHODS
   const getCollection = async () => {
     userDispatch({
@@ -101,6 +106,11 @@ const Collection = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nfts])
+
+  useEffect(() => {
+    setNfts([]);
+    setChainChanged(true);
+  }, [refresh])
 
   const updateDatabase = async (results) => {
     // console.log("before updateing", results, results.length)
@@ -348,6 +358,7 @@ const Collection = () => {
             getDetails={() => { }}
             getFetchValues={getFetchValues}
             key={index.toString()}
+            flipRefresh={flipRefresh}
           />
         );
       })}

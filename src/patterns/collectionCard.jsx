@@ -39,7 +39,7 @@ import { useHistory } from "react-router-dom";
 
 
 const CollectionCard = (props) => {
-  const { name, description, image, platform, token, getDetails, isERC721, getFetchValues, token_uri } = props;
+  const { name, description, image, platform, token, getDetails, isERC721, getFetchValues, token_uri, flipRefresh } = props;
 
   const { chainId, account, library } = useWeb3React();
   const videoRef = useRef(null);
@@ -172,9 +172,6 @@ const CollectionCard = (props) => {
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
-      console.log(price)
-      console.log(endingPrice)
-      console.log(days)
       await list({ currency, platform, token, price, endingPrice, days, image: "uploadedFile.publicUrl" });
       // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       // const results = response.data
@@ -184,6 +181,10 @@ const CollectionCard = (props) => {
       // });
       setIsLoading(false);
       setIsSuccess(true);
+      setTimeout(() => {
+        flipRefresh()
+        setIsSuccess(false);
+      }, 3000);
     } catch (error) {
       console.log(error);
       setIsLoading(false);

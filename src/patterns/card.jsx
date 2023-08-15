@@ -33,9 +33,9 @@ import { ethers } from "ethers"
 import PromptFinish from "./promptFinish";
 
 const Card = (props) => {
-  const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, getFetchValues, endingPrice, image_cache } =
+  const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, getFetchValues, endingPrice, token, platform, isERC721, metadataUrl, description } =
     props;
-  const imageToDisplay = image_cache ? image_cache : image
+  const imageToDisplay = image
   const { account, chainId, library } = useWeb3React();
   const history = useHistory();
   const isUser = account?.toLocaleLowerCase() === creator?.toLocaleLowerCase();
@@ -78,6 +78,8 @@ const Card = (props) => {
       if (contentType.includes("video")) {
         setIsVideo(true);
       }
+    }).catch(e => {
+      setIsVideo(false);
     })
 
   }, [imageToDisplay, setPlaceholder])
@@ -107,27 +109,11 @@ const Card = (props) => {
   const handleFinishAuction = async () => {
     // return setIsFinished(true)
     setIsLoading(true);
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    
     try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
-    try {
+      const gasLimit = 1000000;
       const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-      const tx = chainId === 137 ? await Bidify.finish(id.toString(), { maxFeePerGas, maxPriorityFeePerGas }) : await Bidify.finish(id.toString())
+      const tx = chainId === 137 ? await Bidify.finish(id.toString(), { gasLimit }) : await Bidify.finish(id.toString())
       const ret = await tx.wait()
       setTransaction(ret)
       // await new new Web3(window.ethereum).eth.Contract(
@@ -137,6 +123,7 @@ const Card = (props) => {
       //   .finish(id.toString())
       //   .send({ from: account });
       let updateData = await getDetailFromId(id);
+      console.log(updateData);
       while (!updateData.paidOut) {
         updateData = await getDetailFromId(id)
       }
@@ -223,9 +210,10 @@ const Card = (props) => {
     } catch {
       // ignore
     }
+    const gasLimit = 1000000
     if (currency) {
       const tx = chainId === 137 ? await Bidify
-        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), { maxFeePerGas, maxPriorityFeePerGas }) :
+        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), { gasLimit }) :
         await Bidify
           .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString())
       const ret = await tx.wait()
@@ -237,8 +225,6 @@ const Card = (props) => {
         .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
           from: from,
           value: atomic(amount, decimals).toString(),
-          maxFeePerGas,
-          maxPriorityFeePerGas
         }) :
         await Bidify
           .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
@@ -273,9 +259,16 @@ const Card = (props) => {
       let allowance = await erc20.allowance(from, BIDIFY.address[chain_id])
       // console.log("allowence", Number(allowance));
       if (Number(amount) >= Number(allowance)) {
-        const tx = await erc20
-          .approve(Bidify._address, atomic(balance, decimals))
-        await tx.wait()
+        if (chainId === 137) {
+          const gasLimit = 1000000
+          const tx = await erc20
+            .approve(Bidify._address, atomic(balance, decimals), {gasLimit})
+            await tx.wait()
+        } else {
+          const tx = await erc20
+            .approve(Bidify._address, atomic(balance, decimals))
+            await tx.wait()
+        }
       }
     }
 
@@ -352,8 +345,9 @@ const Card = (props) => {
       detail = await getListingDetail(id)
     }
     else detail = await getListing(id)
-    const fetchedValue = await getFetchValues(detail)
-    return { ...fetchedValue, network: chainId }
+    const fetchedValue = await getFetchValues(detail);
+    const { owner, paidOut, highBidder } = fetchedValue;
+    return { owner, network: chainId, image: imageUrl, metadataUrl, name, token, platform, isERC721, description, paidOut, highBidder }
 
   }
   // Renderer callback with condition
