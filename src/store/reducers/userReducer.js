@@ -55,6 +55,11 @@ const UserReducer = (state = initialState, action) => {
         ...state,
         searchResults: undefined,
       };
+    case actionType.SET_BALANCE:
+      return {
+        ...state,
+        balance: payload?.balance
+      }
     default:
       return { ...state };
   }

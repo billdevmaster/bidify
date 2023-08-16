@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Web3 from "web3";
@@ -35,12 +35,12 @@ import { ERC721, ERC1155 } from "../utils/config";
 import { ethers } from "ethers";
 import { useHistory } from "react-router-dom";
 // import { getBase64ImageBuffer } from "../utils/NFTFetcher";
-// import { UserContext } from "../store/contexts";
+import { UserContext } from "../store/contexts";
 
 
 const CollectionCard = (props) => {
   const { name, description, image, platform, token, getDetails, isERC721, getFetchValues, token_uri, flipRefresh } = props;
-
+  const { userDispatch } = useContext(UserContext);
   const { chainId, account, library } = useWeb3React();
   const videoRef = useRef(null);
 
@@ -182,6 +182,7 @@ const CollectionCard = (props) => {
       setIsLoading(false);
       setIsSuccess(true);
       setTimeout(() => {
+        updateBalance();
         flipRefresh()
         setIsSuccess(false);
       }, 3000);
@@ -245,6 +246,17 @@ const CollectionCard = (props) => {
           .approve(BIDIFY.address[chainId], token)
     }
     await tx.wait()
+  }
+
+  const updateBalance = async () => {
+    const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
+    let _balance = await web3.eth.getBalance(account); //Will give value in.
+    _balance = web3.utils.fromWei(_balance);
+    // setBalance(_balance)
+    userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance: _balance },
+      });
   }
 
   const getLogs = async () => {
@@ -519,7 +531,7 @@ const CollectionCard = (props) => {
           {loadingImage && <img className='placeholder' src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:200:200:0:0/plain/${imageUrl}` : imageUrl}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:200:0:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
             onError={() => setPlaceholder(NoImage)}

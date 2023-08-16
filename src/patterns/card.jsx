@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import Countdown from "react-countdown";
 import { useWeb3React } from "@web3-react/core";
 import { useHistory } from "react-router-dom";
@@ -13,6 +13,7 @@ import "../styles/patterns/card.scss";
 import { Text, Button } from "../components";
 import { LiveAuctionModal } from "./modal";
 import Prompt from "./prompt";
+import { UserContext } from "../store/contexts";
 
 //IMPORTING MEDIA ASSETS
 
@@ -24,7 +25,7 @@ import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
-import { getListing, getDecimals, unatomic, atomic, isValidUrl } from "../utils/Bidify";
+import { getListing, getDecimals, unatomic, atomic, isValidUrl, getBalance } from "../utils/Bidify";
 import { getTokenSymbol } from "../utils/getCurrencySymbol";
 import Web3 from "web3";
 import { baseUrl, BIDIFY, BIT, snowApi, getLogUrl, getSymbol } from "../utils/config";
@@ -33,6 +34,7 @@ import { ethers } from "ethers"
 import PromptFinish from "./promptFinish";
 
 const Card = (props) => {
+  const { userDispatch } = useContext(UserContext);
   const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, getFetchValues, endingPrice, token, platform, isERC721, metadataUrl, description } =
     props;
   const imageToDisplay = image
@@ -130,6 +132,11 @@ const Card = (props) => {
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
       setIsFinished(true);
+      const balance = await getBalance();
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
     } catch (error) {
       console.log(error);
       setIsLoading(false);
@@ -161,6 +168,11 @@ const Card = (props) => {
       setLatestDetail(updateData)
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
+      const balance = await getBalance();
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
       if (amount >= endingPrice && Number(endingPrice) !== 0) setIsFinished(true)
       else setIsSuccess(true);
     } catch (error) {
@@ -419,7 +431,7 @@ const Card = (props) => {
           {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:300:300:0:0/plain/${imageUrl}` : imageUrl}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:300:0:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={
               <div></div>

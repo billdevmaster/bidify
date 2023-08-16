@@ -44,7 +44,6 @@ const Profile = () => {
   const [isCopied, setIsCopied] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
   const [toggleSwitchNetwork, setToggleSwitchNetwork] = useState(false);
-  const [balance, setBalance] = useState("");
   const [symbol, setSymbol] = useState("");
   const [networkName, setNetworkName] = useState();
 
@@ -54,13 +53,18 @@ const Profile = () => {
         const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
         let _balance = await web3.eth.getBalance(account); //Will give value in.
         _balance = web3.utils.fromWei(_balance);
-        setBalance(_balance)
+        console.log(_balance)
+        // setBalance(_balance)
+        userDispatch({
+            type: "SET_BALANCE",
+            payload: { balance: _balance },
+          });
         setSymbol(getSymbol(chainId))
         return
       }
     }
     getData()
-  }, [account, chainId]);
+  }, [account, chainId, userDispatch]);
 
   const switchNetwork = async (_chainId) => {
     try {
@@ -108,7 +112,10 @@ const Profile = () => {
 
   useEffect(() => {
     if (!account) {
-      setBalance("")
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance: "" },
+      });
       setSymbol("")
       setNetworkName("")
     }
@@ -119,7 +126,7 @@ const Profile = () => {
     } catch (err) {
       window.alert("Switch to Rinkeby Testnet");
     }
-  }, [active, account, chainId]);
+  }, [active, account, chainId, userDispatch]);
 
   const handleCopy = () => {
     setIsCopied(true);
@@ -182,7 +189,7 @@ const Profile = () => {
           copied
         </span>
       </Text>
-      <Text style={{ fontWeight: 600 }}>{balance ? balance.toString().slice(0, 7) : 0} {symbol ? symbol : ""}</Text>
+      <Text style={{ fontWeight: 600 }}>{userState?.balance ? userState?.balance.toString().slice(0, 7) : 0} {symbol ? symbol : ""}</Text>
     </div>
   );
 

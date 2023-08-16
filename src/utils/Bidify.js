@@ -966,3 +966,10 @@ export const isValidUrl = urlString=> {
   '(\\#[-a-z\\d_]*)?$','i'); // validate fragment locator
 return !!urlPattern.test(urlString);
 }
+
+export const getBalance = async () => {
+  const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
+  let _balance = await web3.eth.getBalance(account); //Will give value in.
+  _balance = web3.utils.fromWei(_balance);
+  return _balance;
+}

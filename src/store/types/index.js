@@ -5,3 +5,4 @@ export const MY_COLLECTIONS = "MY_COLLECTIONS";
 export const SIDEBAR = "SIDEBAR";
 export const SEARCH_AUCTIONS = "SEARCH_AUCTIONS";
 export const RESET = "RESET";
+export const SET_BALANCE = "SET_BALANCE";
