@@ -125,18 +125,12 @@ const Card = (props) => {
       //   .finish(id.toString())
       //   .send({ from: account });
       let updateData = await getDetailFromId(id);
-      console.log(updateData);
       while (!updateData.paidOut) {
         updateData = await getDetailFromId(id)
       }
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
       setIsFinished(true);
-      const balance = await getBalance();
-      userDispatch({
-        type: "SET_BALANCE",
-        payload: { balance },
-      });
     } catch (error) {
       console.log(error);
       setIsLoading(false);
@@ -144,6 +138,12 @@ const Card = (props) => {
       setTimeout(() => {
         setIsError(false);
       }, 3000);
+    } finally {
+      const balance = await getBalance();
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
     }
   };
 
@@ -168,11 +168,7 @@ const Card = (props) => {
       setLatestDetail(updateData)
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
-      const balance = await getBalance();
-      userDispatch({
-        type: "SET_BALANCE",
-        payload: { balance },
-      });
+      
       if (amount >= endingPrice && Number(endingPrice) !== 0) setIsFinished(true)
       else setIsSuccess(true);
     } catch (error) {
@@ -193,6 +189,12 @@ const Card = (props) => {
           setIsError(false);
         }, 3000);
       }
+    } finally {
+      const balance = await getBalance();
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
     }
   };
   const bid = async (id, amount) => {

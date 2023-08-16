@@ -182,7 +182,6 @@ const CollectionCard = (props) => {
       setIsLoading(false);
       setIsSuccess(true);
       setTimeout(() => {
-        updateBalance();
         flipRefresh()
         setIsSuccess(false);
       }, 3000);
@@ -196,6 +195,7 @@ const CollectionCard = (props) => {
     } finally {
       onSubmitProps.setSubmitting(false);
       onSubmitProps.resetForm();
+      updateBalance();
     }
   };
 
