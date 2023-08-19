@@ -268,6 +268,7 @@ const DetailsPage = () => {
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
       setIsFinished(true);
+      await getData();
     } catch (error) {
       console.log(error);
       setIsLoading(false);
@@ -944,6 +945,7 @@ const DetailsPage = () => {
       await list({ currency, platform, token, price, endingPrice, days, image: imageUrl });
       setIsLoading(false);
       setIsSuccess(true);
+      await getData();
     } catch (error) {
       console.log(error);
       setIsLoading(false);
