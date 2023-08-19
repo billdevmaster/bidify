@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Fragment, useRef, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { atomic, getDecimals, getListing, unatomic, isValidUrl } from "../utils/Bidify";
+import { atomic, getDecimals, getListing, unatomic, isValidUrl, getBalance } from "../utils/Bidify";
 import { FetchWrapper } from "use-nft";
 import Web3 from "web3";
 import Countdown from "react-countdown";
@@ -44,8 +44,6 @@ import axios from "axios";
 import PromptFinish from "../patterns/promptFinish";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
-import { getBase64ImageBuffer } from "../utils/NFTFetcher";
-import fleekStorage from '@fleekhq/fleek-storage-js'
 import { CollectionModal } from "../patterns/modal";
 import { UserContext } from "../store/contexts";
 
@@ -149,15 +147,24 @@ const DetailsPage = () => {
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     const topic0 =
       "0x5424fbee1c8f403254bd729bf71af07aa944120992dfa4f67cd0e7846ef7b8de";
-    const logs = await web3.eth.getPastLogs({
-      fromBlock: "earliest",
-      toBlock: "latest",
-      address: BIDIFY.address[chainId],
-      topics: [topic0],
-    });
+    let logs = [];
+    try {
+      if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
+        const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}address=${BIDIFY.address[chainId]}&topic0=${topic0}&apikey=${snowApi[chainId]}`)
+        logs = ret.data.result
+      }
+      else logs = await web3.eth.getPastLogs({
+        fromBlock: "earliest",
+        toBlock: "latest",
+        address: BIDIFY.address[chainId],
+        topics: [topic0],
+      });
+    } catch (e) {
+      console.log(e.message)
+    }
 
     return logs.length;
-  };
+  }
 
   const getFetchValues = async (val) => {
     let provider;
@@ -241,27 +248,11 @@ const DetailsPage = () => {
   const handleFinishAuction = async () => {
     // return setIsFinished(true)
     setIsLoading(true);
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
+    
     try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
-    try {
+      const gasLimit = 1000000;
       const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-      const tx = chainId === 137 ? await Bidify.finish(id.toString(), { maxFeePerGas, maxPriorityFeePerGas }) : await Bidify.finish(id.toString())
+      const tx = chainId === 137 ? await Bidify.finish(id.toString(), { gasLimit }) : await Bidify.finish(id.toString())
       const ret = await tx.wait()
       setTransaction(ret)
       // await new new Web3(window.ethereum).eth.Contract(
@@ -275,8 +266,6 @@ const DetailsPage = () => {
         updateData = await getDetailFromId(id)
       }
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
-      await getData();
-      await getTransferHistory()
       setIsLoading(false);
       setIsFinished(true);
     } catch (error) {
@@ -286,8 +275,48 @@ const DetailsPage = () => {
       setTimeout(() => {
         setIsError(false);
       }, 3000);
+    } finally {
+      const balance = await getBalance(account);
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
     }
   };
+
+  // const handleFinishAuction = async () => {
+  //   // return setIsFinished(true)
+  //   setIsLoading(true);
+  //   const gasLimit = 1000000;
+  //   try {
+  //     const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
+  //     const tx = chainId === 137 ? await Bidify.finish(id.toString(), { gasLimit }) : await Bidify.finish(id.toString())
+  //     const ret = await tx.wait()
+  //     setTransaction(ret)
+  //     // await new new Web3(window.ethereum).eth.Contract(
+  //     //   BIDIFY.abi,
+  //     //   BIDIFY.address[chainId]
+  //     // ).methods
+  //     //   .finish(id.toString())
+  //     //   .send({ from: account });
+  //     let updateData = await getDetailFromId(id);
+  //     while (!updateData.paidOut) {
+  //       updateData = await getDetailFromId(id)
+  //     }
+  //     await axios.put(`${baseUrl}/auctions/${id}`, updateData)
+  //     await getData();
+  //     await getTransferHistory()
+  //     setIsLoading(false);
+  //     setIsFinished(true);
+  //   } catch (error) {
+  //     console.log(error);
+  //     setIsLoading(false);
+  //     setIsError(true);
+  //     setTimeout(() => {
+  //       setIsError(false);
+  //     }, 3000);
+  //   }
+  // };
 
   const getDetailFromId = async (id) => {
     let detail
@@ -296,12 +325,16 @@ const DetailsPage = () => {
     }
     else detail = await getListing(id)
     const fetchedValue = await getFetchValues(detail)
-    return { ...fetchedValue, network: chainId }
-
+    const { owner } = fetchedValue;
+    return { owner, ...detail, network: chainId, image: imageUrl, metadataUrl: latestDetail.token_uri, name: latestDetail.name, token: latestDetail.token, platform: latestDetail.platform, isERC721: latestDetail.isERC721 }
   }
   const getListingDetail = async (id) => {
     const bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-    const raw = await bidify.getListing(id.toString())
+    let raw = await bidify.getListing(id.toString())
+    while (raw.creator === "0x0000000000000000000000000000000000000000") {
+      raw = await bidify.getListing(id.toString())
+    }
+    // console.log("raw", raw)
     const nullIfZeroAddress = (value) => {
       if (value === "0x0000000000000000000000000000000000000000") {
         return null;
@@ -313,8 +346,8 @@ const DetailsPage = () => {
 
     let highBidder = nullIfZeroAddress(raw.highBidder);
     let currentBid = raw.price;
-    let endingPrice = raw.endingPrice;
     let nextBid = await bidify.getNextBid(id);
+    let endingPrice = raw.endingPrice;
     let decimals = await getDecimals(currency);
     if (currentBid === nextBid) {
       currentBid = null;
@@ -330,6 +363,7 @@ const DetailsPage = () => {
     const topic1 = "0x" + new web3.utils.BN(id).toString("hex").padStart(64, "0");
     const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xdbf5dea084c6b3ed344cc0976b2643f2c9a3400350e04162ea3f7302c16ee914&topic0_1_opr=and&topic1=${chainId === 9001 || chainId === 100 ? topic1.toLowerCase() : topic1}&apikey=${snowApi[chainId]}`)
     const logs = ret.data.result
+    // console.log("bid logs", logs)
     for (let bid of logs) {
       bids.push({
         bidder: "0x" + bid.topics[2].substr(-40),
@@ -361,6 +395,69 @@ const DetailsPage = () => {
 
       bids,
     };
+
+
+    // const bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
+    // const raw = await bidify.getListing(id.toString())
+    // const nullIfZeroAddress = (value) => {
+    //   if (value === "0x0000000000000000000000000000000000000000") {
+    //     return null;
+    //   }
+    //   return value;
+    // };
+
+    // let currency = nullIfZeroAddress(raw.currency);
+
+    // let highBidder = nullIfZeroAddress(raw.highBidder);
+    // let currentBid = raw.price;
+    // let endingPrice = raw.endingPrice;
+    // let nextBid = await bidify.getNextBid(id);
+    // let decimals = await getDecimals(currency);
+    // if (currentBid === nextBid) {
+    //   currentBid = null;
+    // } else {
+    //   currentBid = unatomic(currentBid.toString(), decimals);
+    // }
+
+    // let referrer = nullIfZeroAddress(raw.referrer);
+    // let marketplace = nullIfZeroAddress(raw.marketplace);
+
+    // let bids = [];
+    // const web3 = new Web3(window.ethereum)
+    // const topic1 = "0x" + new web3.utils.BN(id).toString("hex").padStart(64, "0");
+    // const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xdbf5dea084c6b3ed344cc0976b2643f2c9a3400350e04162ea3f7302c16ee914&topic0_1_opr=and&topic1=${chainId === 9001 || chainId === 100 ? topic1.toLowerCase() : topic1}&apikey=${snowApi[chainId]}`)
+    // const logs = ret.data.result
+    // for (let bid of logs) {
+    //   bids.push({
+    //     bidder: "0x" + bid.topics[2].substr(-40),
+    //     price: unatomic(
+    //       new web3.utils.BN(bid.data.substr(2), "hex").toString(),
+    //       decimals
+    //     ),
+    //   });
+    // }
+    // return {
+    //   id,
+    //   creator: raw.creator,
+    //   currency,
+    //   platform: raw.platform,
+    //   token: raw.token.toString(),
+
+    //   highBidder,
+    //   currentBid,
+    //   nextBid: unatomic(nextBid.toString(), decimals),
+    //   endingPrice: unatomic(endingPrice.toString(), decimals),
+
+    //   referrer,
+    //   allowMarketplace: raw.allowMarketplace,
+    //   marketplace,
+
+    //   endTime: raw.endTime.toString(),
+    //   paidOut: raw.paidOut,
+    //   isERC721: raw.isERC721,
+
+    //   bids,
+    // };
   }
   const bid = async (id, amount) => {
     let currency
@@ -369,38 +466,21 @@ const DetailsPage = () => {
     let decimals = await getDecimals(currency)
     const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
     const from = account
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
+    const gasLimit = 1000000;
     if (currency) {
       const tx = chainId === 137 ? await Bidify
-        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), { maxFeePerGas, maxPriorityFeePerGas }) :
+        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), { gasLimit }) :
         await Bidify
           .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString())
       const ret = await tx.wait()
       setTransaction(ret)
     } else {
+      // const nextamount = await Bidify.getNextBid(id)
+      // console.log("amount and next Bid", atomic(amount, decimals).toString(), nextamount.toString())
       const tx = chainId === 137 ? await Bidify
         .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
           from: from,
           value: atomic(amount, decimals).toString(),
-          maxFeePerGas,
-          maxPriorityFeePerGas
         }) :
         await Bidify
           .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
@@ -477,6 +557,12 @@ const DetailsPage = () => {
       setTimeout(() => {
         setIsError(false);
       }, 3000);
+    } finally {
+      const balance = await getBalance(account);
+      userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance },
+      });
     }
   };
   const getTransferHistory = async () => {
@@ -846,39 +932,6 @@ const DetailsPage = () => {
   const onSubmit = async (values, onSubmitProps) => {
     setIsModal(false);
     setIsLoading(true);
-    setProcessContent(
-      "Uploading image to the fleek storage"
-    );
-    const buffer = await getBase64ImageBuffer(data[0].image).catch(e => console.log('error in promise', e))
-    let uploadedFile
-    if (buffer !== undefined) {
-      const files = await fleekStorage.listFiles({
-        apiKey: process.env.REACT_APP_API_KEY,
-        apiSecret: process.env.REACT_APP_API_SECRET,
-        bucket: process.env.REACT_APP_BUCKET,
-        getOptions: [
-          'key',
-          'hash',
-          'publicUrl'
-        ],
-      })
-      const key = files.length
-      try {
-        uploadedFile = await fleekStorage.upload({
-          apiKey: process.env.REACT_APP_API_KEY,
-          apiSecret: process.env.REACT_APP_API_SECRET,
-          bucket: process.env.REACT_APP_BUCKET,
-          key: key.toString(),
-          data: buffer,
-          httpUploadProgressCallback: (event) => {
-            console.log(Math.round(event.loaded / event.total * 100) + '% done');
-          }
-        })
-      } catch (e) {
-        setIsLoading(false);
-        return console.log("err while uploading image", e)
-      }
-    }
     const { currency, platform, token, price, endingPrice, days } = values;
     setProcessContent(
       "Please allow https://bidify.org permission within your wallet when prompted, there will be a small fee for this…"
@@ -888,14 +941,7 @@ const DetailsPage = () => {
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
-      await list({ currency, platform, token, price, endingPrice, days, image: uploadedFile.publicUrl });
-      const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
-      const results = response.data
-      console.log(results)
-      userDispatch({
-        type: "MY_COLLECTIONS",
-        payload: { results, isCollectionFetched: true },
-      });
+      await list({ currency, platform, token, price, endingPrice, days, image: imageUrl });
       setIsLoading(false);
       setIsSuccess(true);
     } catch (error) {
@@ -908,49 +954,52 @@ const DetailsPage = () => {
     } finally {
       onSubmitProps.setSubmitting(false);
       onSubmitProps.resetForm();
+      updateBalance();
     }
   };
+
+  const updateBalance = async () => {
+    const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
+    let _balance = await web3.eth.getBalance(account); //Will give value in.
+    _balance = web3.utils.fromWei(_balance);
+    // setBalance(_balance)
+    userDispatch({
+        type: "SET_BALANCE",
+        payload: { balance: _balance },
+      });
+  }
+
   async function signList({
     platform,
     token,
     isERC721,
   }) {
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
-    // const web3 = new Web3(window.ethereum);
     const erc721 = new ethers.Contract(platform, ERC721.abi, library.getSigner())
     const erc1155 = new ethers.Contract(platform, ERC1155.abi, library.getSigner())
-    let tx
-    if (isERC721)
-      tx = chainId === 137 ?
-        await erc721
-          .approve(BIDIFY.address[chainId], token, { maxFeePerGas, maxPriorityFeePerGas }) :
-        await erc721
-          .approve(BIDIFY.address[chainId], token)
-    else
-      tx = chainId === 137 ?
+    let tx;
+    const gasLimit = 1000000;
+    
+    if (!isERC721) {
+      const isApproved = await erc1155.isApprovedForAll(account, BIDIFY.address[chainId])
+      if (!isApproved) {
+        tx = chainId === 137 ?
         await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true, { maxFeePerGas, maxPriorityFeePerGas }) :
+          .setApprovalForAll(BIDIFY.address[chainId], true, { gasLimit }) :
         await erc1155
           .setApprovalForAll(BIDIFY.address[chainId], true)
+      }
+    }
+    if (isERC721) {
+      tx = chainId === 137 ?
+        await erc721
+          .approve(BIDIFY.address[chainId], token, {gasLimit}) :
+        await erc721
+          .approve(BIDIFY.address[chainId], token)
+    }
+    console.log("signlist");
     await tx.wait()
   }
+
   async function list({
     currency,
     platform,
@@ -960,6 +1009,7 @@ const DetailsPage = () => {
     days,
     image
   }) {
+    
     let decimals = await getDecimals(currency);
     if (!currency) {
       currency = "0x0000000000000000000000000000000000000000";
@@ -970,28 +1020,12 @@ const DetailsPage = () => {
       library.getSigner()
     );
     // return token;
-    const tokenNum = data[0].isERC721 ? token : new Web3(window.ethereum).utils.hexToNumberString(token);
-    // return console.log("before list", atomic(price.toString(), decimals).toString())
-    let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    try {
-      const { data } = await axios({
-        method: 'get',
-        url: 'https://gasstation-mainnet.matic.network/v2'
-      })
-      maxFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxFee) + '',
-        'gwei'
-      )
-      maxPriorityFeePerGas = ethers.utils.parseUnits(
-        Math.ceil(data.fast.maxPriorityFee) + '',
-        'gwei'
-      )
-    } catch {
-      // ignore
-    }
+    const tokenNum = token;
+
+    const gasLimit = 1000000;
     try {
       const totalCount = await getLogs()
+      console.log("list", token);
       const tx = chainId === 137 ? await Bidify
         .list(
           currency,
@@ -1002,7 +1036,7 @@ const DetailsPage = () => {
           Number(days),
           data[0].isERC721,
           "0x0000000000000000000000000000000000000000",
-          { maxFeePerGas, maxPriorityFeePerGas }
+          { gasLimit }
         ) :
         await Bidify
           .list(
@@ -1022,9 +1056,12 @@ const DetailsPage = () => {
         while (await getLogs() === totalCount) {
           console.log("while loop")
         }
+      // console.log("listed results", tx, det)
+      // const listCnt = await getLogs()
+      // console.log("total Count", totalCount)
       const newId = totalCount
+      // await delay()
       const listingDetail = await getDetailFromId(newId)
-      console.log("adding to database", listingDetail)
       await axios.post(`${baseUrl}/auctions`, { ...listingDetail, image_cache: image })
     } catch (error) {
       return console.log("list error", error)

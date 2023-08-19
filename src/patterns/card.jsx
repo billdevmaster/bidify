@@ -139,7 +139,7 @@ const Card = (props) => {
         setIsError(false);
       }, 3000);
     } finally {
-      const balance = await getBalance();
+      const balance = await getBalance(account);
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },
@@ -190,7 +190,7 @@ const Card = (props) => {
         }, 3000);
       }
     } finally {
-      const balance = await getBalance();
+      const balance = await getBalance(account);
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },

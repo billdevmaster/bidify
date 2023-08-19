@@ -172,7 +172,7 @@ const CollectionCard = (props) => {
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
-      await list({ currency, platform, token, price, endingPrice, days, image: "uploadedFile.publicUrl" });
+      await list({ currency, platform, token, price, endingPrice, days, image: imageUrl });
       // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       // const results = response.data
       // userDispatch({
