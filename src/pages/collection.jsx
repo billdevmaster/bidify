@@ -65,17 +65,13 @@ const Collection = () => {
       const results = response.data
       if (results.length === 0) {
         const newData = await getDetails()
-        userDispatch({
-          type: "MY_COLLECTIONS",
-          payload: { results: newData },
-        });
+        setNfts([ ...newData ]);
+        
         await handleUpdate(newData)
       }
       else {
-        userDispatch({
-          type: "MY_COLLECTIONS",
-          payload: { results, isCollectionFetched: true },
-        });
+        setNfts([ ...results ]);
+        
         // setTimeout(async() => {
         await updateDatabase(results)
         // }, 3000)
@@ -126,7 +122,6 @@ const Collection = () => {
   }
   useEffect(() => {
     if (account !== undefined) {
-      console.log(account, chainId)
       setNfts([]);
       setChainChanged(true);
     } else {
@@ -192,6 +187,7 @@ const Collection = () => {
           return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
         },
         imageProxy: (url) => {
+          console.log("url", url);
           if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
             return url;
           } else {
@@ -203,9 +199,8 @@ const Collection = () => {
         },
       }
     );
-    console.log(val);
+
     const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
-    console.log(result)
     // const urlParams = new URLSearchParams(result.image);
     const finalResult = {
       ...result,
@@ -229,6 +224,7 @@ const Collection = () => {
       }
       for (var i = 0; i < getNft?.length; i++) {
         try {
+          console.log("nft", getNft[i]);
           const res = await getFetchValues(getNft[i]);
           results.push(res);
         } catch (error) {

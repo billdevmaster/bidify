@@ -204,7 +204,7 @@ export const URLS = {
   [NetworkId.AVAX]: "https://api.avax.network/ext/bc/C/rpc",
   [NetworkId.MATIC]: "https://polygon-rpc.com",
   [NetworkId.XDAI]: "https://rpc.gnosischain.com",
-  [NetworkId.ETC]: "https://www.ethercluster.com/etc",
+  [NetworkId.ETC]: "https://etc.etcdesktop.com",
   [NetworkId.EVMOS]: "https://eth.bd.evmos.org:8545",
   [NetworkId.MOVR]: "https://rpc.api.moonriver.moonbeam.network",
   [NetworkId.BNB]: "https://bsc-dataseed1.binance.org",
