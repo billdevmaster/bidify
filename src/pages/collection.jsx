@@ -50,7 +50,7 @@ const Collection = () => {
       type: "MY_COLLECTIONS",
       payload: { results: undefined },
     });
-    if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
+    if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56 || chainId === 5) {
       const resp = await getNftsByMoralis(account, cursor, chainId);
       setCursor(resp.cursor)
       let tmpNfts = [...nfts];
@@ -64,7 +64,6 @@ const Collection = () => {
        const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       const results = response.data
       if (results.length === 0) {
-        console.log("getting from blockchain")
         const newData = await getDetails()
         userDispatch({
           type: "MY_COLLECTIONS",
@@ -73,7 +72,6 @@ const Collection = () => {
         await handleUpdate(newData)
       }
       else {
-        console.log("here")
         userDispatch({
           type: "MY_COLLECTIONS",
           payload: { results, isCollectionFetched: true },
@@ -101,7 +99,7 @@ const Collection = () => {
   }
 
   useEffect(() => {
-    if (nfts.length === 0 && chainChanged) {
+    if (nfts.length === 0 && chainChanged && account != null) {
       getCollection();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,6 +126,7 @@ const Collection = () => {
   }
   useEffect(() => {
     if (account !== undefined) {
+      console.log(account, chainId)
       setNfts([]);
       setChainChanged(true);
     } else {
@@ -147,9 +146,9 @@ const Collection = () => {
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;
-      case 4:
+      case 5:
         provider = new ethers.providers.InfuraProvider(
-          "rinkeby",
+          "goerli",
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;
@@ -204,8 +203,9 @@ const Collection = () => {
         },
       }
     );
-    
+    console.log(val);
     const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
+    console.log(result)
     // const urlParams = new URLSearchParams(result.image);
     const finalResult = {
       ...result,
@@ -250,7 +250,7 @@ const Collection = () => {
     const topic = "0x" + from.split("0x")[1].padStart(64, "0")
     let logs = []
     let logs_1155 = []
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
+    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100) {
       const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef&topic0_2_opr=and&topic2=${chainId === 9001 || chainId === 100 ? topic.toLowerCase() : topic}&apikey=${snowApi[chainId]}`).catch(e => console.log("getNft error"))
       // return console.log("return value", ret)
       logs = ret.data.result
@@ -302,7 +302,7 @@ const Collection = () => {
         continue;
       }
     }
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
+    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100) {
       const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62&topic0_3_opr=and&topic3=${chainId === 9001 || chainId === 100 ? topic.toLowerCase() : topic}&apikey=${snowApi[chainId]}`)
       logs_1155 = ret.data.result
     }

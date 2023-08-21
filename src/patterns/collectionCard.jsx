@@ -265,7 +265,7 @@ const CollectionCard = (props) => {
       "0x5424fbee1c8f403254bd729bf71af07aa944120992dfa4f67cd0e7846ef7b8de";
     let logs = [];
     try {
-      if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
+      if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
         const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}address=${BIDIFY.address[chainId]}&topic0=${topic0}&apikey=${snowApi[chainId]}`)
         logs = ret.data.result
       }
@@ -302,25 +302,6 @@ const CollectionCard = (props) => {
     );
     // return token;
     const tokenNum = token;
-    // return console.log("before list", atomic(price.toString(), decimals).toString())
-    // let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    // let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    // try {
-    //   const { data } = await axios({
-    //     method: 'get',
-    //     url: 'https://gasstation-mainnet.matic.network/v2'
-    //   })
-    //   maxFeePerGas = ethers.utils.parseUnits(
-    //     Math.ceil(data.fast.maxFee) + '',
-    //     'gwei'
-    //   )
-    //   maxPriorityFeePerGas = ethers.utils.parseUnits(
-    //     Math.ceil(data.fast.maxPriorityFee) + '',
-    //     'gwei'
-    //   )
-    // } catch {
-    //   // ignore
-    // }
     const gasLimit = 1000000;
     try {
       const totalCount = await getLogs()
@@ -348,15 +329,12 @@ const CollectionCard = (props) => {
             "0x0000000000000000000000000000000000000000"
           )
       const ret = await tx.wait()
-      // console.log("transaction", ret)
       setTransaction(ret)
-      if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100)
+      if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100)
         while (await getLogs() === totalCount) {
           console.log("while loop")
         }
-      // console.log("listed results", tx, det)
       // const listCnt = await getLogs()
-      // console.log("total Count", totalCount)
       const newId = totalCount
       // await delay()
       const listingDetail = await getDetailFromId(newId)
@@ -436,7 +414,7 @@ const CollectionCard = (props) => {
   }
   const getDetailFromId = async (id) => {
     let detail
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
+    if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
       detail = await getListingDetail(id)
     }
     else detail = await getListing(id)
@@ -531,7 +509,7 @@ const CollectionCard = (props) => {
           {loadingImage && <img className='placeholder' src={placeholder} alt="" />}
           <LazyLoadImage
             effect="blur"
-            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:200:0:0:0/plain/${imageUrl}` : imageUrl}
+            src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:0:0:0/plain/${imageUrl}` : imageUrl}
             alt="art"
             placeholder={<img src={NFTPortImage} alt="" />}
             onError={() => setPlaceholder(NoImage)}

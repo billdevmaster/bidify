@@ -50,7 +50,7 @@ const Header = ({ title, description }) => {
       }
     >
       <Link to="/" className="logo">
-        <img src={NetworkData[(account ? chainId : 4)].logo} alt="logo" width={48} />
+        <img src={NetworkData[(account ? chainId : 5)].logo} alt="logo" width={48} />
         <Text variant="primary">{getSymbol(chainId)}</Text>
       </Link>
       <div className="content">

@@ -27,7 +27,6 @@ import zksyncLoader from "../assets/icons/loader_3d_zksync.gif";
 export const baseUrl = process.env.REACT_APP_API_URI
 export const NetworkId = {
   ETHEREUM: 1,
-  RINKEBY: 4,
   MATIC: 137,
   EGEM: 1987,
   AVAX: 43114,
@@ -40,6 +39,7 @@ export const NetworkId = {
   OPTIMISM: 10,
   zkSyncTestnet: 280,
   zkSyncMainnet: 324,
+  GOERLI: 5
 }
 export const NetworkData = {
   [NetworkId.MATIC]: {
@@ -90,14 +90,6 @@ export const NetworkData = {
     logo: logo_avax,
     loader: avaxLoader
   },
-  [NetworkId.RINKEBY]: {
-    id: '4',
-    color: '#F4DD62',
-    symbol: "ETH",
-    name: "RINKEBY",
-    logo: logo_eth,
-    loader: ethLoader
-  },
   [NetworkId.MOVR]: {
     symbol: "MOVR",
     id: "1285",
@@ -130,6 +122,14 @@ export const NetworkData = {
     logo: logo_optimism,
     loader: optimismLoader
   },
+  [NetworkId.GOERLI]: {
+    symbol: "GOERLI",
+    id: "5",
+    name: "GOERLI",
+    color: "#F4DD62",
+    logo: logo_eth,
+    loader: ethLoader
+  },
   // [NetworkId.zkSyncTestnet]: {
   //   symbol: "ETH",
   //   id: "280",
@@ -157,7 +157,7 @@ export const getSymbol = (chainId) => {
   if(chainId) return NetworkData[chainId].symbol;
   else return "N/A"
 }
-export const supportedChainIds = [ NetworkId.MATIC, NetworkId.BNB, NetworkId.ETC, NetworkId.XDAI, NetworkId.EGEM, NetworkId.AVAX, NetworkId.RINKEBY, NetworkId.MOVR, NetworkId.EVMOS, NetworkId.zkSyncMainnet]
+export const supportedChainIds = [ NetworkId.MATIC, NetworkId.BNB, NetworkId.ETC, NetworkId.XDAI, NetworkId.EGEM, NetworkId.AVAX, NetworkId.MOVR, NetworkId.EVMOS, NetworkId.zkSyncMainnet, NetworkId.zkSyncTestnet, NetworkId.GOERLI]
 export const getLogUrl = {
   [NetworkId.MATIC]: "https://api.polygonscan.com/api?module=logs&action=getLogs",
   [NetworkId.AVAX]: "https://api.snowtrace.io/api?module=logs&action=getLogs",
@@ -167,18 +167,19 @@ export const getLogUrl = {
   [NetworkId.XDAI]: "https://blockscout.com/xdai/mainnet/api?module=logs&action=getLogs",
   [NetworkId.zkSyncTestnet]: "https://zksync2-testnet.zkscan.io/api?module=logs&action=getLogs",
   [NetworkId.zkSyncTestnet]: "https://zksync2-mainnet.zkscan.io/api?module=logs&action=getLogs",
+  [NetworkId.GOERLI]: "https://api-goerli.etherscan.io/api?module=logs&action=getLogs",
 }
 export const snowApi = {
   [NetworkId.AVAX]: "Y72B4EMH42SYS5C3RGGIDJM9HPQKYUSUTH",
   [NetworkId.MATIC]: "XKIRV2YEWTDJIXRQSXB42PT78P1879NTJT",
   [NetworkId.BNB]: "QC4UPPIN4JPDA4YAY1PAS46RGNJUYFHKCM",
   [NetworkId.MOVR]: "GCYJCX8CRQQQ21H94QT4YR8TGRHRZIBDIG",
-  [NetworkId.EVMOS]: ""
+  [NetworkId.GOERLI]: "QNH5TIIYA5GXN2TT326FFBMSSY3H5B24XX",
+  [NetworkId.EVMOS]: "QNH5TIIYA5GXN2TT326FFBMSSY3H5B24XX"
 
 }
 export const EXPLORER = {
   [NetworkId.EGEM]: "https://blockscout.egem.io",
-  [NetworkId.RINKEBY]: "https://rinkeby.etherscan.io",
   [NetworkId.MATIC]: "https://polygonscan.com",
   [NetworkId.EVMOS]: "https://evm.evmos.org",
   [NetworkId.BNB]: "https://bscscan.com",
@@ -190,6 +191,7 @@ export const EXPLORER = {
   [NetworkId.ARBITRUM]: "",
   [NetworkId.zkSyncTestnet]: "https://goerli.explorer.zksync.io",
   [NetworkId.zkSyncMainnet]: "https://explorer.zksync.io",
+  [NetworkId.GOERLI]: "https://goerli.etherscan.io",
 }
 
 export const URLS = {
@@ -198,7 +200,6 @@ export const URLS = {
   // 80001: "https://matic-testnet-archive-rpc.bwarelabs.com",
   // 43113: "https://api.avax-test.network/ext/bc/C/rpc",
   // 5: "https://goerli.infura.io/v3/0c8149f8e63b4b818d441dd7f74ab618",
-  [NetworkId.RINKEBY]: "https://rinkeby.infura.io/v3/0c8149f8e63b4b818d441dd7f74ab618",
   [NetworkId.EGEM]: "https://lb.rpc.egem.io",
   [NetworkId.AVAX]: "https://api.avax.network/ext/bc/C/rpc",
   [NetworkId.MATIC]: "https://polygon-rpc.com",
@@ -211,12 +212,11 @@ export const URLS = {
   [NetworkId.ARBITRUM]: "",
   [NetworkId.zkSyncTestnet]: "https://testnet.era.zksync.dev",
   [NetworkId.zkSyncMainnet]: "https://mainnet.era.zksync.io",
-
+  [NetworkId.GOERLI]: "https://goerli.infura.io/v3/0c8149f8e63b4b818d441dd7f74ab618",
 };
 
 export const BIDIFY = {
   address: {
-    [NetworkId.RINKEBY]: "0xE9f8f0267342c4b9e65C7Bc14c1b33877e10C817", //new tested
     [NetworkId.EGEM]: "0x159f569E2c35C7B5B601D222AFafc90edD23E1f9", //new tested
     [NetworkId.AVAX]: "0xED002B4F0b3167E9096F6f4674c18433dca96518", //new tested
     [NetworkId.MATIC]: "0x2FccEd65EeC83Bf2790bBc046013e13d6498038C", //new tested
@@ -229,6 +229,7 @@ export const BIDIFY = {
     [NetworkId.ARBITRUM]: "",
     [NetworkId.zkSyncTestnet]: "0x6eB662c9464F5bc1476efe8E1834E0d616568a8b",
     [NetworkId.zkSyncMainnet]: "0x6eB662c9464F5bc1476efe8E1834E0d616568a8b",
+    [NetworkId.GOERLI]: "0xa13a7b348d7b7446cfB401B47C0966C19e1cfD76",
   },
   abi: [
     {
@@ -1595,7 +1596,6 @@ export const BIT = { //WETH
     // 42: "0x010Dd8B6EDa66127a1F2fCfB53933515D111c855",
     // 5: "0x89bAF37C8214bFcaeCB0586FD26E1459D40417c6",
     [NetworkId.EGEM]: "0xE5fca20e55811D461800A853f444FBC6f5B72BEa",
-    [NetworkId.RINKEBY]: "0xc778417E063141139Fce010982780140Aa0cD5Ab",
   },
   abi: [
     {

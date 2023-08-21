@@ -200,9 +200,9 @@ const LiveAuction = () => {
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;
-      case 4:
+      case 5:
         provider = new ethers.providers.InfuraProvider(
-          "rinkeby",
+          "goerli",
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;

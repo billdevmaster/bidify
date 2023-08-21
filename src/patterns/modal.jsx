@@ -128,7 +128,7 @@ export const CollectionModal = (props) => {
             {loadingImage && <img className="placeholder" src={placeholder} alt="" />}
             <LazyLoadImage
               effect="blur"
-              src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:250:0:0:0/plain/${imageUrl}` : imageUrl}
+              src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:0:0:0/plain/${imageUrl}` : imageUrl}
               alt="art"
               placeholder={
                 <div></div>

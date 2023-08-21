@@ -175,9 +175,9 @@ const DetailsPage = () => {
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;
-      case 4:
+      case 5:
         provider = new ethers.providers.InfuraProvider(
-          "rinkeby",
+          "goerli",
           "0c8149f8e63b4b818d441dd7f74ab618"
         );
         break;
@@ -792,7 +792,7 @@ const DetailsPage = () => {
                 {loadingImage && <img src={placeholder} alt="" />}
                 <LazyLoadImage
                   effect="blur"
-                  src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:400:0:0:0/plain/${imageUrl}` : imageUrl}
+                  src={isValidUrl(imageUrl) ? `https://img-cdn.magiceden.dev/rs:fill:500:0:0:0/plain/${imageUrl}` : imageUrl}
                   alt="art"
                   placeholder={
                     <div></div>
