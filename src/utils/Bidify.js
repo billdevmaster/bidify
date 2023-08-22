@@ -387,7 +387,6 @@ export async function getNFTs(chainId, account) {
       try {
         let platform = log.address;
         let token = log.topics[3];
-        
         let owner = await new web3.eth.Contract(ERC721.abi, platform).methods
           .ownerOf(token)
           .call();
@@ -404,13 +403,14 @@ export async function getNFTs(chainId, account) {
         ids[jointID] = true;
         res.push({ platform, token, amount: 1 });
       } catch (e) {
+        console.log(e)
         continue;
       }
     } else {
       continue;
     }
   }
-  if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100 || chainId === 61) {
+  if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100) {
     const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62&topic0_3_opr=and&topic3=${chainId === 9001 || chainId === 100 ? topic.toLowerCase() : topic}&apikey=${snowApi[chainId]}`)
     logs_1155 = ret.data.result
   }
