@@ -9,7 +9,7 @@ import logo_evmos from "../assets/logo/bidifylogo_evmos.png";
 import logo_movr from "../assets/logo/bidifylogo_movr.png";
 import logo_optimism from "../assets/logo/bidifylogo_optimism.png";
 import logo_arbitrum from "../assets/logo/bidifylogo_arbitrum.png";
-import logo_zksync from "../assets/logo/bidifylogo_zksync.png";
+// import logo_zksync from "../assets/logo/bidifylogo_zksync.png";
 
 import ethLoader from "../assets/icons/loader_3d.gif";
 import egemLoader from "../assets/icons/loader_3d_egem.gif";
@@ -22,7 +22,7 @@ import xdaiLoader from "../assets/icons/loader_xdai.gif";
 import etcLoader from "../assets/icons/loader_etc.gif";
 import arbitrumLoader from "../assets/icons/loader_arbitrum.gif";
 import optimismLoader from "../assets/icons/loader_optimism.gif";
-import zksyncLoader from "../assets/icons/loader_3d_zksync.gif";
+// import zksyncLoader from "../assets/icons/loader_3d_zksync.gif";
 
 export const baseUrl = process.env.REACT_APP_API_URI
 export const NetworkId = {
@@ -138,14 +138,14 @@ export const NetworkData = {
   //   logo: logo_zksync,
   //   loader: zksyncLoader
   // },
-  [NetworkId.zkSyncMainnet]: {
-    symbol: "ETH",
-    id: "324",
-    name: "zkSyncMainnet",
-    color: "#34d399",
-    logo: logo_zksync,
-    loader: zksyncLoader
-  },
+  // [NetworkId.zkSyncMainnet]: {
+  //   symbol: "ETH",
+  //   id: "324",
+  //   name: "zkSyncMainnet",
+  //   color: "#34d399",
+  //   logo: logo_zksync,
+  //   loader: zksyncLoader
+  // },
   // [NetworkId.ETHEREUM]: {
   //   symbol: "ETH",
   //   name: "ETHEREUM",
@@ -157,7 +157,7 @@ export const getSymbol = (chainId) => {
   if(chainId) return NetworkData[chainId].symbol;
   else return "N/A"
 }
-export const supportedChainIds = [ NetworkId.MATIC, NetworkId.BNB, NetworkId.ETC, NetworkId.XDAI, NetworkId.EGEM, NetworkId.AVAX, NetworkId.MOVR, NetworkId.EVMOS, NetworkId.zkSyncMainnet, NetworkId.zkSyncTestnet, NetworkId.GOERLI]
+export const supportedChainIds = [ NetworkId.MATIC, NetworkId.BNB, NetworkId.ETC, NetworkId.XDAI, NetworkId.EGEM, NetworkId.AVAX, NetworkId.MOVR, NetworkId.EVMOS, NetworkId.zkSyncTestnet, NetworkId.GOERLI]
 export const getLogUrl = {
   [NetworkId.MATIC]: "https://api.polygonscan.com/api?module=logs&action=getLogs",
   [NetworkId.AVAX]: "https://api.snowtrace.io/api?module=logs&action=getLogs",
@@ -165,7 +165,6 @@ export const getLogUrl = {
   [NetworkId.MOVR]: "https://api-moonriver.moonscan.io/api?module=logs&action=getLogs",
   [NetworkId.EVMOS]: "https://evm.evmos.org/api?module=logs&action=getLogs",
   [NetworkId.XDAI]: "https://blockscout.com/xdai/mainnet/api?module=logs&action=getLogs",
-  [NetworkId.zkSyncTestnet]: "https://zksync2-testnet.zkscan.io/api?module=logs&action=getLogs",
   [NetworkId.zkSyncTestnet]: "https://zksync2-mainnet.zkscan.io/api?module=logs&action=getLogs",
   [NetworkId.GOERLI]: "https://api-goerli.etherscan.io/api?module=logs&action=getLogs",
 }

@@ -4,7 +4,6 @@ import * as Yup from "yup";
 import Web3 from "web3";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
-import axios from "axios"
 // import fleekStorage from '@fleekhq/fleek-storage-js'
 
 //IMPORTING STYLESHEET
@@ -28,18 +27,15 @@ import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
-import { baseUrl, BIDIFY, getLogUrl, getSymbol, snowApi, URLS } from "../utils/config";
-import { getDecimals, atomic, getListing, unatomic, isValidUrl } from "../utils/Bidify";
+import { getSymbol, URLS } from "../utils/config";
+import { isValidUrl, list, signList, getDetails } from "../utils/Bidify";
 import { useWeb3React } from "@web3-react/core";
-import { ERC721, ERC1155 } from "../utils/config";
-import { ethers } from "ethers";
 import { useHistory } from "react-router-dom";
 // import { getBase64ImageBuffer } from "../utils/NFTFetcher";
 import { UserContext } from "../store/contexts";
 
-
 const CollectionCard = (props) => {
-  const { name, description, image, platform, token, getDetails, isERC721, getFetchValues, token_uri, flipRefresh } = props;
+  const { name, description, image, platform, amount, token, isERC721, token_uri, flipRefresh } = props;
   const { userDispatch } = useContext(UserContext);
   const { chainId, account, library } = useWeb3React();
   const videoRef = useRef(null);
@@ -123,44 +119,6 @@ const CollectionCard = (props) => {
   const onSubmit = async (values, onSubmitProps) => {
     setIsModal(false);
     setIsLoading(true);
-    // setProcessContent(
-    //   "Uploading image to the fleek storage"
-    // );
-    // const buffer = await getBase64ImageBuffer(image).catch(e => console.log('error in promise', e))
-    // let uploadedFile = {publicUrl: undefined}
-    // if (buffer !== undefined) {
-    //   const files = await fleekStorage.listFiles({
-    //     apiKey: process.env.REACT_APP_API_KEY,
-    //     apiSecret: process.env.REACT_APP_API_SECRET,
-    //     bucket: process.env.REACT_APP_BUCKET,
-    //     getOptions: [
-    //       'key',
-    //       'hash',
-    //       'publicUrl'
-    //     ],
-    //   })
-    //   const key = files.length
-    //   console.log(key)
-    //   try {
-    //     uploadedFile = await fleekStorage.upload({
-    //       apiKey: process.env.REACT_APP_API_KEY,
-    //       apiSecret: process.env.REACT_APP_API_SECRET,
-    //       bucket: process.env.REACT_APP_BUCKET,
-    //       key: key.toString(),
-    //       data: buffer,
-    //       httpUploadProgressCallback: (event) => {
-    //         console.log(Math.round(event.loaded / event.total * 100) + '% done');
-    //       }
-    //     })
-    //   } catch (e) {
-    //     setIsLoading(false);
-    //     return console.log("err while uploading image", e)
-    //   }
-    // }
-    // return console.log(uploadedFile)
-    // return setTimeout(() => {
-    //   setIsSuccess(true)
-    // }, 10000)
     const { currency, platform, token, price, endingPrice, days } = values;
     // return console.log(atomic(price.toString(), 18).toString(), atomic(endingPrice.toString(), 18).toString(),)
     setProcessContent(
@@ -168,11 +126,11 @@ const CollectionCard = (props) => {
     );
     try {
       // check if approved already.
-      await signList({ platform, token, isERC721 });
+      await signList({ platform, token, isERC721, chainId, account, library });
       setProcessContent(
         "Confirm the second transaction to allow your NFT to be listed, there will be another small network fee."
       );
-      await list({ currency, platform, token, price, endingPrice, days, image: imageUrl });
+      await list({ currency, platform, token, price, endingPrice, days, image: imageUrl, name, metadataUrl: token_uri, description, chainId, account, library, isERC721, setTransaction });
       // const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       // const results = response.data
       // userDispatch({
@@ -199,55 +157,6 @@ const CollectionCard = (props) => {
     }
   };
 
-  async function signList({
-    platform,
-    token,
-    isERC721,
-  }) {
-    // let maxFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    // let maxPriorityFeePerGas = ethers.BigNumber.from(40000000000) // fallback to 40 gwei
-    // try {
-    //   const { data } = await axios({
-    //     method: 'get',
-    //     url: 'https://gasstation-mainnet.matic.network/v2'
-    //   })
-    //   maxFeePerGas = ethers.utils.parseUnits(
-    //     Math.ceil(data.fast.maxFee) + '',
-    //     'gwei'
-    //   )
-    //   maxPriorityFeePerGas = ethers.utils.parseUnits(
-    //     Math.ceil(data.fast.maxPriorityFee) + '',
-    //     'gwei'
-    //   )
-    // } catch {
-    //   // ignore
-    // }
-    // const web3 = new Web3(window.ethereum);
-    const erc721 = new ethers.Contract(platform, ERC721.abi, library.getSigner())
-    const erc1155 = new ethers.Contract(platform, ERC1155.abi, library.getSigner())
-    let tx;
-    const gasLimit = 1000000;
-    
-    if (!isERC721) {
-      const isApproved = await erc1155.isApprovedForAll(account, BIDIFY.address[chainId])
-      if (!isApproved) {
-        tx = chainId === 137 ?
-        await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true, { gasLimit }) :
-        await erc1155
-          .setApprovalForAll(BIDIFY.address[chainId], true)
-      }
-    }
-    if (isERC721) {
-      tx = chainId === 137 ?
-        await erc721
-          .approve(BIDIFY.address[chainId], token, {gasLimit}) :
-        await erc721
-          .approve(BIDIFY.address[chainId], token)
-    }
-    await tx.wait()
-  }
-
   const updateBalance = async () => {
     const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
     let _balance = await web3.eth.getBalance(account); //Will give value in.
@@ -258,172 +167,6 @@ const CollectionCard = (props) => {
         payload: { balance: _balance },
       });
   }
-
-  const getLogs = async () => {
-    const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
-    const topic0 =
-      "0x5424fbee1c8f403254bd729bf71af07aa944120992dfa4f67cd0e7846ef7b8de";
-    let logs = [];
-    try {
-      if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-        const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}address=${BIDIFY.address[chainId]}&topic0=${topic0}&apikey=${snowApi[chainId]}`)
-        logs = ret.data.result
-      }
-      else logs = await web3.eth.getPastLogs({
-        fromBlock: "earliest",
-        toBlock: "latest",
-        address: BIDIFY.address[chainId],
-        topics: [topic0],
-      });
-    } catch (e) {
-      console.log(e.message)
-    }
-
-    return logs.length;
-  }
-  
-  async function list({
-    currency,
-    platform,
-    token,
-    price,
-    endingPrice,
-    days,
-    image
-  }) {
-    let decimals = await getDecimals(currency);
-    if (!currency) {
-      currency = "0x0000000000000000000000000000000000000000";
-    }
-    const Bidify = new ethers.Contract(
-      BIDIFY.address[chainId],
-      BIDIFY.abi,
-      library.getSigner()
-    );
-    // return token;
-    const tokenNum = token;
-    const gasLimit = 1000000;
-    try {
-      const totalCount = await getLogs()
-      const tx = chainId === 137 ? await Bidify
-        .list(
-          currency,
-          platform,
-          tokenNum.toString(),
-          atomic(price.toString(), decimals).toString(),
-          atomic(endingPrice.toString(), decimals).toString(),
-          Number(days),
-          isERC721,
-          "0x0000000000000000000000000000000000000000",
-          { gasLimit }
-        ) :
-        await Bidify
-          .list(
-            currency,
-            platform,
-            tokenNum.toString(),
-            atomic(price.toString(), decimals).toString(),
-            atomic(endingPrice.toString(), decimals).toString(),
-            Number(days),
-            isERC721,
-            "0x0000000000000000000000000000000000000000"
-          )
-      const ret = await tx.wait()
-      setTransaction(ret)
-      if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100)
-        while (await getLogs() === totalCount) {
-          console.log("while loop")
-        }
-      // const listCnt = await getLogs()
-      const newId = totalCount
-      // await delay()
-      const listingDetail = await getDetailFromId(newId)
-      await axios.post(`${baseUrl}/auctions`, { ...listingDetail, image_cache: image })
-    } catch (error) {
-      return console.log("list error", error)
-    }
-  }
-
-  const getListingDetail = async (id) => {
-    const bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-    let raw = await bidify.getListing(id.toString())
-    while (raw.creator === "0x0000000000000000000000000000000000000000") {
-      raw = await bidify.getListing(id.toString())
-    }
-    // console.log("raw", raw)
-    const nullIfZeroAddress = (value) => {
-      if (value === "0x0000000000000000000000000000000000000000") {
-        return null;
-      }
-      return value;
-    };
-
-    let currency = nullIfZeroAddress(raw.currency);
-
-    let highBidder = nullIfZeroAddress(raw.highBidder);
-    let currentBid = raw.price;
-    let nextBid = await bidify.getNextBid(id);
-    let endingPrice = raw.endingPrice;
-    let decimals = await getDecimals(currency);
-    if (currentBid === nextBid) {
-      currentBid = null;
-    } else {
-      currentBid = unatomic(currentBid.toString(), decimals);
-    }
-
-    let referrer = nullIfZeroAddress(raw.referrer);
-    let marketplace = nullIfZeroAddress(raw.marketplace);
-
-    let bids = [];
-    const web3 = new Web3(window.ethereum)
-    const topic1 = "0x" + new web3.utils.BN(id).toString("hex").padStart(64, "0");
-    const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xdbf5dea084c6b3ed344cc0976b2643f2c9a3400350e04162ea3f7302c16ee914&topic0_1_opr=and&topic1=${chainId === 9001 || chainId === 100 ? topic1.toLowerCase() : topic1}&apikey=${snowApi[chainId]}`)
-    const logs = ret.data.result
-    // console.log("bid logs", logs)
-    for (let bid of logs) {
-      bids.push({
-        bidder: "0x" + bid.topics[2].substr(-40),
-        price: unatomic(
-          new web3.utils.BN(bid.data.substr(2), "hex").toString(),
-          decimals
-        ),
-      });
-    }
-    return {
-      id,
-      creator: raw.creator,
-      currency,
-      platform: raw.platform,
-      token: raw.token.toString(),
-
-      highBidder,
-      currentBid,
-      nextBid: unatomic(nextBid.toString(), decimals),
-      endingPrice: unatomic(endingPrice.toString(), decimals),
-
-      referrer,
-      allowMarketplace: raw.allowMarketplace,
-      marketplace,
-
-      endTime: raw.endTime.toString(),
-      paidOut: raw.paidOut,
-      isERC721: raw.isERC721,
-
-      bids,
-    };
-  }
-  const getDetailFromId = async (id) => {
-    let detail
-    if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-      detail = await getListingDetail(id)
-    }
-    else detail = await getListing(id)
-    const fetchedValue = await getFetchValues(detail)
-    const { owner } = fetchedValue;
-    return { owner, ...detail, network: chainId, image: imageUrl, metadataUrl: token_uri, name, token, platform, isERC721 }
-
-  }
-
 
   const renderCreateForm = (
     <Formik
@@ -525,9 +268,16 @@ const CollectionCard = (props) => {
   const renderContent = (
     <div className="card_content cursor">
       <div className="overlay" onClick={() => history.push(`/nft_details/${platform}/${token}`)}></div>
-      <Text variant="primary" className="title">
-        {name}
-      </Text>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Text variant="primary" className="title">
+          {name}
+        </Text>
+        {!isERC721 && (
+          <Text variant="primary" className="title">
+            {amount}
+          </Text>
+        )}
+      </div>
       <div className="description_block">
         <Text className="description">{description}</Text>
       </div>

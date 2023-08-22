@@ -1,8 +1,5 @@
 import React, { useEffect, useContext, useState } from "react";
 import { useWeb3React } from "@web3-react/core";
-import { FetchWrapper } from "use-nft";
-import Web3 from "web3";
-import { Contract, ethers } from "ethers";
 
 //STYLESHEET
 
@@ -23,9 +20,10 @@ import { UserContext } from "../store/contexts";
 
 //IMPORTING UTILITY PACKAGES
 
-import { ERC721, ERC1155, URLS, baseUrl, snowApi, getLogUrl } from "../utils/config";
+import { baseUrl } from "../utils/config";
 import axios from "axios";
 import { getNftsByMoralis } from "../utils/NFTFetcher";
+import { getFetchValues, getDetails } from "../utils/Bidify";
 
 const Collection = () => {
   //INITIALIZING HOOKS
@@ -50,7 +48,7 @@ const Collection = () => {
       type: "MY_COLLECTIONS",
       payload: { results: undefined },
     });
-    if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56 || chainId === 5) {
+    if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
       const resp = await getNftsByMoralis(account, cursor, chainId);
       setCursor(resp.cursor)
       let tmpNfts = [...nfts];
@@ -64,7 +62,7 @@ const Collection = () => {
        const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       const results = response.data
       if (results.length === 0) {
-        const newData = await getDetails()
+        const newData = await getDetails(chainId, account)
         setNfts([ ...newData ]);
         
         await handleUpdate(newData)
@@ -79,7 +77,6 @@ const Collection = () => {
       }
     }
     setChainChanged(false);
-   
   }
 
   const loadNftsFromMoralis = async () => {
@@ -109,7 +106,7 @@ const Collection = () => {
   const updateDatabase = async (results) => {
     // console.log("before updateing", results, results.length)
     console.log("updating database")
-    const newData = await getDetails()
+    const newData = await getDetails(chainId, account)
     console.log("updated database")
     // console.log("comparing", newData, newData.length)
     // if(newData.length === )
@@ -132,218 +129,6 @@ const Collection = () => {
 
   // const account = "0x0B172a4E265AcF4c2E0aB238F63A44bf29bBd158";
 
-  const getFetchValues = async (val) => {
-    let provider;
-    switch (chainId) {
-      case 1:
-        provider = new ethers.providers.InfuraProvider(
-          "mainnet",
-          "0c8149f8e63b4b818d441dd7f74ab618"
-        );
-        break;
-      case 5:
-        provider = new ethers.providers.InfuraProvider(
-          "goerli",
-          "0c8149f8e63b4b818d441dd7f74ab618"
-        );
-        break;
-      default:
-        if (!URLS[chainId]) console.log("select valid chain");
-        else provider = new ethers.providers.JsonRpcProvider(URLS[chainId])
-    }
-
-    const ethersConfig = {
-      ethers: { Contract },
-      provider: provider,
-    };
-
-
-    const fetcher = ["ethers", ethersConfig];
-
-    function ipfsUrl(cid, path = "") {
-      return `https://dweb.link/ipfs/${cid}${path}`;
-    }
-
-    function imageurl(url) {
-      // const string = url;
-      const check = url.substr(16, 4);
-      if(url.includes('ipfs://')) return url.replace('ipfs://', 'https://ipfs.io/ipfs/')
-      if(url.includes('https://ipfs.io/ipfs/')) return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-      if (check === "ipfs") {
-        const manipulated = url.substr(16, 16 + 45);
-        return "https://dweb.link/" + manipulated;
-      } else {
-        return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-      }
-    }
-
-    // function jsonurl(url) {
-    //   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    // }
-
-    const fetchWrapper = new FetchWrapper(fetcher
-      , {
-        jsonProxy: (url) => {
-          return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        },
-        imageProxy: (url) => {
-          console.log("url", url);
-          if (chainId === 137 || chainId === 43114 || chainId === 42161 || chainId === 56) {
-            return url;
-          } else {
-            return imageurl(url);
-          }
-        },
-        ipfsUrl: (cid, path) => {
-          return ipfsUrl(cid, path);
-        },
-      }
-    );
-
-    const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
-    // const urlParams = new URLSearchParams(result.image);
-    const finalResult = {
-      ...result,
-      // newImageUrl: imageurl(result.image),
-      platform: val?.platform,
-      token: val?.token,
-      isERC721: result.owner ? true : false,
-      owner: result.owner ? result.owner : account
-    };
-    return finalResult;
-  };
-
-  const getDetails = async () => {
-    let getNft;
-
-    let results = [];
-      try {
-        getNft = await getNFTs();
-      } catch (e) {
-        console.log(e.message)
-      }
-      for (var i = 0; i < getNft?.length; i++) {
-        try {
-          console.log("nft", getNft[i]);
-          const res = await getFetchValues(getNft[i]);
-          results.push(res);
-        } catch (error) {
-          console.log(error)
-        }
-      }
-    // setUpdate(results.map(item => { return { ...item, network: chainId } }))
-    userDispatch({
-      type: "MY_COLLECTIONS",
-      payload: { results, isCollectionFetched: true },
-    });
-    return results.map(item => { return { ...item, network: chainId } })
-  };
-
-  async function getNFTs() {
-    // const from = account;
-    const from = account;
-    const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]));
-    const topic = "0x" + from.split("0x")[1].padStart(64, "0")
-    let logs = []
-    let logs_1155 = []
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-      const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef&topic0_2_opr=and&topic2=${chainId === 9001 || chainId === 100 ? topic.toLowerCase() : topic}&apikey=${snowApi[chainId]}`).catch(e => console.log("getNft error"))
-      // return console.log("return value", ret)
-      logs = ret.data.result
-    }
-
-    // Get all transfers to us
-    else logs = await web3.eth.getPastLogs({
-      fromBlock: 0,
-      toBlock: "latest",
-      topics: [
-        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        // "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62",
-        // null,
-        null,
-        "0x" + from.split("0x")[1].padStart(64, "0"),
-      ],
-    }).catch(e => {
-      console.log("error on getpastlogs", e.message)
-    });
-    // Filter to just tokens which are still in our custody
-    const res = [];
-    const ids = {};
-    for (let log of logs) {
-      // console.log(log)
-      if (log.topics[3] !== undefined) {
-        try {
-          let platform = log.address;
-          let token = log.topics[3];
-          
-          let owner = await new web3.eth.Contract(ERC721.abi, platform).methods
-            .ownerOf(token)
-            .call();
-          if (owner.toLowerCase() !== from.toLowerCase()) {
-            continue;
-          }
-  
-          let jointID = platform + token;
-  
-          if (ids[jointID]) {
-            continue;
-          }
-          token = parseInt(token, 16).toString();
-          ids[jointID] = true;
-          res.push({ platform, token });
-        } catch (e) {
-          continue;
-        }
-      } else {
-        continue;
-      }
-    }
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 5 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-      const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62&topic0_3_opr=and&topic3=${chainId === 9001 || chainId === 100 ? topic.toLowerCase() : topic}&apikey=${snowApi[chainId]}`)
-      logs_1155 = ret.data.result
-    }
-    else logs_1155 = await web3.eth.getPastLogs({
-      fromBlock: 0,
-      toBlock: "latest",
-      topics: [
-        // "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-        "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62",
-        null,
-        null,
-        "0x" + from.split("0x")[1].padStart(64, "0"),
-      ],
-    });
-    for (let log of logs_1155) {
-      if (log.topics[3] !== undefined) {
-        try {
-          let platform = log.address;
-          const decodeData = web3.eth.abi.decodeParameters(['uint256', 'uint256'], log.data);
-          let token = web3.utils.toHex(decodeData[0]);
-          let owner = await new web3.eth.Contract(ERC1155.abi, platform).methods
-            .balanceOf(from, decodeData[0])
-            .call();
-          if (owner < 1) continue;
-          // if (owner.toLowerCase() !== from.toLowerCase()) {
-          //   continue;
-          // }
-  
-          let jointID = platform + token;
-  
-          if (ids[jointID]) {
-            continue;
-          }
-          token = token.toString();
-          ids[jointID] = true;
-          res.push({ platform, token });
-        } catch (e) {
-          continue;
-        }
-      } else {
-        continue;
-      }
-    }
-    return res;
-  }
 
   const renderCards = (
     <div className="card_wrapper">

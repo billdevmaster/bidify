@@ -44,7 +44,6 @@ export const CollectionModal = (props) => {
   const videoRef = useRef(null);
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
-  console.log("image", image);
   useEffect(() => {
     const setImage = async () => {
       const arr = image.split("url=");

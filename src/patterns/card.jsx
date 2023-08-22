@@ -25,17 +25,17 @@ import NoImage from "../assets/placeholders/nft-placeholder.svg"
 
 //IMPORTING UTILITY PACKGAES
 
-import { getListing, getDecimals, unatomic, atomic, isValidUrl, getBalance } from "../utils/Bidify";
+import { isValidUrl, getBalance, getDetailFromId } from "../utils/Bidify";
 import { getTokenSymbol } from "../utils/getCurrencySymbol";
-import Web3 from "web3";
-import { baseUrl, BIDIFY, BIT, snowApi, getLogUrl, getSymbol } from "../utils/config";
+import { baseUrl, BIDIFY, getSymbol } from "../utils/config";
 import axios from "axios";
 import { ethers } from "ethers"
 import PromptFinish from "./promptFinish";
+import { signBid, bid } from "../utils/Bidify";
 
 const Card = (props) => {
   const { userDispatch } = useContext(UserContext);
-  const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, getFetchValues, endingPrice, token, platform, isERC721, metadataUrl, description } =
+  const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, endingPrice, token, platform, isERC721, metadataUrl } =
     props;
   const imageToDisplay = image
   const { account, chainId, library } = useWeb3React();
@@ -124,9 +124,9 @@ const Card = (props) => {
       // ).methods
       //   .finish(id.toString())
       //   .send({ from: account });
-      let updateData = await getDetailFromId(id);
+      let updateData = await getDetailFromId(id, chainId, account, imageUrl, metadataUrl, name, token, platform, isERC721, library);
       while (!updateData.paidOut) {
-        updateData = await getDetailFromId(id)
+        updateData = await getDetailFromId(id, chainId, account, imageUrl, metadataUrl, name, token, platform, isERC721, library)
       }
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
@@ -155,16 +155,16 @@ const Card = (props) => {
       "Please allow https://Bidify.org permission within your wallet when prompted there will be a small fee for this"
     );
     try {
-      await signBid(id, amount)
+      await signBid(id, amount, chainId, account, library)
       setProcessContent(
         "Confirm the transaction of your bid amount, there will be a small network fee for this."
       );
-      await bid(id, amount);
-      while (account !== (await getDetailFromId(id)).highBidder) {
+      await bid(id, amount, chainId, account, library, setTransaction);
+      while (account !== (await getDetailFromId(id, chainId, account, imageUrl, metadataUrl, name, token, platform, isERC721, library)).highBidder) {
         console.log("in while loop")
       }
       // console.log("out of loop")
-      const updateData = await getDetailFromId(id);
+      const updateData = await getDetailFromId(id, chainId, account, imageUrl, metadataUrl, name, token, platform, isERC721, library);
       setLatestDetail(updateData)
       await axios.put(`${baseUrl}/auctions/${id}`, updateData)
       setIsLoading(false);
@@ -197,156 +197,7 @@ const Card = (props) => {
       });
     }
   };
-  const bid = async (id, amount) => {
-    let currency
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) currency = (await getListingDetail(id)).currency;
-    else currency = (await getListing(id.toString())).currency
-    let decimals = await getDecimals(currency)
-    const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-    const from = account
-    // return console.log("handle bid", id, atomic(amount, decimals).toString())
-    // console.log("amount", atomic(amount, decimals).toString())
-    
-    const gasLimit = 1000000
-    if (currency) {
-      const tx = chainId === 137 ? await Bidify
-        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), { gasLimit }) :
-        await Bidify
-          .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString())
-      const ret = await tx.wait()
-      setTransaction(ret)
-    } else {
-      // const nextamount = await Bidify.getNextBid(id)
-      // console.log("amount and next Bid", atomic(amount, decimals).toString(), nextamount.toString())
-      const tx = chainId === 137 ? await Bidify
-        .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
-          from: from,
-          value: atomic(amount, decimals).toString(),
-        }) :
-        await Bidify
-          .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
-            from: from,
-            value: atomic(amount, decimals).toString()
-          })
-      const ret = await tx.wait()
-      setTransaction(ret)
-    }
-  }
-  const signBid = async (id, amount) => {
-    // return;
-    const from = account;
-    const chain_id = chainId;
-    let currency
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) currency = (await getListingDetail(id)).currency;
-    else currency = (await getListing(id.toString())).currency
-    let balance;
-    const web3 = new Web3(window.ethereum)
-    if (!currency) {
-      balance = await web3.eth.getBalance(from)
-      balance = web3.utils.fromWei(balance)
-    }
-    else {
-      const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-      const erc20 = new ethers.Contract(currency, BIT.abi, library.getSigner());
-      const decimals = await getDecimals(currency);
-      balance = unatomic(
-        await erc20.balanceOf(from),
-        decimals
-      );
-      let allowance = await erc20.allowance(from, BIDIFY.address[chain_id])
-      // console.log("allowence", Number(allowance));
-      if (Number(amount) >= Number(allowance)) {
-        if (chainId === 137) {
-          const gasLimit = 1000000
-          const tx = await erc20
-            .approve(Bidify._address, atomic(balance, decimals), {gasLimit})
-            await tx.wait()
-        } else {
-          const tx = await erc20
-            .approve(Bidify._address, atomic(balance, decimals))
-            await tx.wait()
-        }
-      }
-    }
 
-    if (Number(balance) < Number(amount)) {
-      throw new Error("low_balance");
-    }
-  }
-  const getListingDetail = async (id) => {
-    const bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
-    const raw = await bidify.getListing(id.toString())
-    const nullIfZeroAddress = (value) => {
-      if (value === "0x0000000000000000000000000000000000000000") {
-        return null;
-      }
-      return value;
-    };
-
-    let currency = nullIfZeroAddress(raw.currency);
-
-    let highBidder = nullIfZeroAddress(raw.highBidder);
-    let currentBid = raw.price;
-    let endingPrice = raw.endingPrice;
-    let nextBid = await bidify.getNextBid(id);
-    let decimals = await getDecimals(currency);
-    if (currentBid === nextBid) {
-      currentBid = null;
-    } else {
-      currentBid = unatomic(currentBid.toString(), decimals);
-    }
-
-    let referrer = nullIfZeroAddress(raw.referrer);
-    let marketplace = nullIfZeroAddress(raw.marketplace);
-
-    let bids = [];
-    const web3 = new Web3(window.ethereum)
-    const topic1 = "0x" + new web3.utils.BN(id).toString("hex").padStart(64, "0");
-    const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}topic0=0xdbf5dea084c6b3ed344cc0976b2643f2c9a3400350e04162ea3f7302c16ee914&topic0_1_opr=and&topic1=${chainId === 9001 || chainId === 100 ? topic1.toLowerCase() : topic1}&apikey=${snowApi[chainId]}`)
-    const logs = ret.data.result
-    for (let bid of logs) {
-      bids.push({
-        bidder: "0x" + bid.topics[2].substr(-40),
-        price: unatomic(
-          new web3.utils.BN(bid.data.substr(2), "hex").toString(),
-          decimals
-        ),
-      });
-    }
-    return {
-      id,
-      creator: raw.creator,
-      currency,
-      platform: raw.platform,
-      token: raw.token.toString(),
-
-      highBidder,
-      currentBid,
-      nextBid: unatomic(nextBid.toString(), decimals),
-      endingPrice: unatomic(endingPrice.toString(), decimals),
-
-      referrer,
-      allowMarketplace: raw.allowMarketplace,
-      marketplace,
-
-      endTime: raw.endTime.toString(),
-      paidOut: raw.paidOut,
-      isERC721: raw.isERC721,
-
-      bids,
-    };
-  }
-  const getDetailFromId = async (id) => {
-    let detail
-    if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-      detail = await getListingDetail(id)
-    }
-    else detail = await getListing(id)
-    const fetchedValue = await getFetchValues(detail);
-    const { owner, paidOut, highBidder } = fetchedValue;
-    return { owner, network: chainId, image: imageUrl, metadataUrl, name, token, platform, isERC721, description, paidOut, highBidder }
-
-  }
   // Renderer callback with condition
   const renderer = ({ days, hours, minutes, seconds, completed }) => {
     if (completed) {
