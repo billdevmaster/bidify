@@ -58,31 +58,33 @@ const CollectionCard = (props) => {
   // const { userDispatch } = useContext(UserContext);
   useEffect(() => {
     
-    if (image.includes('storage.googleapis.com')) {
-      setPlaceholder(NFTPortImage)
-    } else if (image.includes('fleek.co')) {
-      setPlaceholder(FleekImage)
-    } else {
-      setPlaceholder(IpfsImage)
-    }
     const setImage = async () => {
-      const arr = image.split("url=");
-      let displayImg = "";
-      if (arr.length > 1) {
-        SetImageUrl(decodeURIComponent(arr[1]))
-        displayImg = decodeURIComponent(arr[1]);
-      } else {
-        SetImageUrl(image);
-        displayImg = image;
-      }
-      try {
-        const response = await fetch(displayImg);
-        const contentType = response.headers.get("content-type");
-        if (contentType.includes("video")) {
-          setIsVideo(true);
+      if (image) {
+        if (image.includes('storage.googleapis.com')) {
+          setPlaceholder(NFTPortImage)
+        } else if (image.includes('fleek.co')) {
+          setPlaceholder(FleekImage)
+        } else {
+          setPlaceholder(IpfsImage)
         }
-      } catch (e) {
-        setIsVideo(false);
+        const arr = image.split("url=");
+        let displayImg = "";
+        if (arr.length > 1) {
+          SetImageUrl(decodeURIComponent(arr[1]))
+          displayImg = decodeURIComponent(arr[1]);
+        } else {
+          SetImageUrl(image);
+          displayImg = image;
+        }
+        try {
+          const response = await fetch(displayImg);
+          const contentType = response.headers.get("content-type");
+          if (contentType.includes("video")) {
+            setIsVideo(true);
+          }
+        } catch (e) {
+          setIsVideo(false);
+        }
       }
     }
     setImage();

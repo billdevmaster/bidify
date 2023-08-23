@@ -46,29 +46,36 @@ export const CollectionModal = (props) => {
   const [placeholder, setPlaceholder] = useState("")
   useEffect(() => {
     const setImage = async () => {
-      const arr = image.split("url=");
-      let displayImg = "";
-      if (arr.length > 1) {
-        SetImageUrl(decodeURIComponent(arr[1]))
-        displayImg = decodeURIComponent(arr[1]);
-      } else {
-        SetImageUrl(image);
-        displayImg = image;
-      }
-      try {
-        const response = await fetch(displayImg);
-        const contentType = response.headers.get("content-type");
-        if (contentType.includes("video")) {
-          setIsVideo(true);
+      if (image) {
+        const arr = image.split("url=");
+        let displayImg = "";
+        if (arr.length > 1) {
+          SetImageUrl(decodeURIComponent(arr[1]))
+          displayImg = decodeURIComponent(arr[1]);
+        } else {
+          SetImageUrl(image);
+          displayImg = image;
         }
-      } catch (e) {
-        setIsVideo(false);
+        try {
+          const response = await fetch(displayImg);
+          const contentType = response.headers.get("content-type");
+          if (contentType.includes("video")) {
+            setIsVideo(true);
+          }
+        } catch (e) {
+          setIsVideo(false);
+        }
+        if (image.includes('storage.googleapis.com')) {
+          setPlaceholder(NFTPortImage)
+        } else if (image.includes('fleek.co')) {
+          setPlaceholder(FleekImage)
+        } else {
+          setPlaceholder(IpfsImage)
+        }
       }
     }
     setImage();
-    if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-    if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
-    return setPlaceholder(IpfsImage)
+    
   }, [setIsModal, image]);
 
   const handlePlay = () => {

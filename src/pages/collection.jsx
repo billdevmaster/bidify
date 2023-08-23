@@ -59,7 +59,7 @@ const Collection = () => {
       }
       setNfts([ ...tmpNfts ]);
     } else {
-       const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
+      const response = await axios.get(`${baseUrl}/collection`, { params: { chainId, owner: account } })
       const results = response.data
       if (results.length === 0) {
         const newData = await getDetails(chainId, account)

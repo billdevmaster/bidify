@@ -22,7 +22,7 @@ import { UserContext } from "../store/contexts";
 //IMPORTING UTILITY PACKAGES
 
 import { BIDIFY, URLS, baseUrl, snowApi, getLogUrl } from "../utils/config";
-import { getDecimals, getListing, unatomic } from "../utils/Bidify";
+import { getDecimals, getListing, unatomic, getFetchValues } from "../utils/Bidify";
 
 import axios from "axios";
 
@@ -39,18 +39,11 @@ const LiveAuction = () => {
       payload: { results: undefined },
     });
     axios.get(`${baseUrl}/auctions`, { params: { chainId: chainId } })
-      .then(response => {
+      .then(async response => {
         const results = response.data
-        // const filteredData = results.filter((val) => val.paidOut !== true);
-        const userBiddings = results.filter((value) =>
-          value.bids.some(
-            (val) =>
-              val.bidder?.toLocaleLowerCase() === account?.toLocaleLowerCase()
-          )
-        );
         userDispatch({
           type: "LIVE_AUCTION_NFT",
-          payload: { results: results, userBiddings, isFetched: true },
+          payload: { results: results, userBiddings: null, isFetched: true },
         });
       })
       .catch(error => {
@@ -282,19 +275,6 @@ const LiveAuction = () => {
     });
   };
 
-  // const renderNoMathches = (
-  //   <div className="loader">
-  //     <div style={{ display: "flex", alignItems: "center", gridGap: "1em" }}>
-  //       <img
-  //         src={search}
-  //         alt="loader"
-  //         width={24}
-  //         style={{ filter: "greyscale(1)" }}
-  //       />{" "}
-  //       <Text>No matches found</Text>
-  //     </div>
-  //   </div>
-  // );
   const handleUpdate = async () => {
     if (update.length === 0) return
     const res = await axios.post(`${baseUrl}/admin`, update)

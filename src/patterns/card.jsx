@@ -37,6 +37,7 @@ const Card = (props) => {
   const { userDispatch } = useContext(UserContext);
   const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, endingPrice, token, platform, isERC721, metadataUrl } =
     props;
+  console.log(image)
   const imageToDisplay = image
   const { account, chainId, library } = useWeb3React();
   const history = useHistory();
@@ -57,33 +58,32 @@ const Card = (props) => {
   const [loadingImage, setLoadingImage] = useState(true)
   const [placeholder, setPlaceholder] = useState("")
   useEffect(() => {
-    
-    if (imageToDisplay.includes('storage.googleapis.com')) {
-      setPlaceholder(NFTPortImage)
-    } else if (imageToDisplay.includes('fleek.co')) {
-      setPlaceholder(FleekImage)
-    } else {
-      setPlaceholder(IpfsImage)
-    }
-    
-    const arr = imageToDisplay.split("url=");
-    let displayImg = "";
-    if (arr.length > 1) {
-      SetImageUrl(decodeURIComponent(arr[1]))
-      displayImg = decodeURIComponent(arr[1]);
-    } else {
-      SetImageUrl(imageToDisplay);
-      displayImg = imageToDisplay;
-    }
-    fetch(displayImg).then(response => {
-      const contentType = response.headers.get("content-type");
-      if (contentType.includes("video")) {
-        setIsVideo(true);
+    if (imageToDisplay) {
+      if (imageToDisplay.includes('storage.googleapis.com')) {
+        setPlaceholder(NFTPortImage)
+      } else if (imageToDisplay.includes('fleek.co')) {
+        setPlaceholder(FleekImage)
+      } else {
+        setPlaceholder(IpfsImage)
       }
-    }).catch(e => {
-      setIsVideo(false);
-    })
-
+      const arr = imageToDisplay.split("url=");
+      let displayImg = "";
+      if (arr.length > 1) {
+        SetImageUrl(decodeURIComponent(arr[1]))
+        displayImg = decodeURIComponent(arr[1]);
+      } else {
+        SetImageUrl(imageToDisplay);
+        displayImg = imageToDisplay;
+      }
+      fetch(displayImg).then(response => {
+        const contentType = response.headers.get("content-type");
+        if (contentType.includes("video")) {
+          setIsVideo(true);
+        }
+      }).catch(e => {
+        setIsVideo(false);
+      })
+    }
   }, [imageToDisplay, setPlaceholder])
   // useEffect(() => {
   //   if (isSuccess) getLists();

@@ -1182,8 +1182,9 @@ export const getFetchValues = async (val, chainId, account) => {
       },
     }
   );
+  let result = {}; 
   try {
-    const result = await fetchWrapper.fetchNft(val?.platform, val?.token);
+    result = await fetchWrapper.fetchNft(val?.platform, val?.token);
     // const urlParams = new URLSearchParams(result.image);
     const finalResult = {
       ...result,
@@ -1200,8 +1201,8 @@ export const getFetchValues = async (val, chainId, account) => {
       // newImageUrl: imageurl(result.image),
       platform: val?.platform,
       token: val?.token,
-      isERC721: result.owner ? true : false,
-      owner: result.owner ? result.owner : account,
+      isERC721: result && result.owner ? true : false,
+      owner: result && result.owner ? result.owner : account,
       amount: val?.amount
     };
     return finalResult;
