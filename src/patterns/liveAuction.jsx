@@ -22,7 +22,7 @@ import { UserContext } from "../store/contexts";
 //IMPORTING UTILITY PACKAGES
 
 import { BIDIFY, URLS, baseUrl, snowApi, getLogUrl } from "../utils/config";
-import { getDecimals, getListing, unatomic, getFetchValues } from "../utils/Bidify";
+import { getDecimals, getListing, unatomic } from "../utils/Bidify";
 
 import axios from "axios";
 
