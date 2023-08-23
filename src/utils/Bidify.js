@@ -681,14 +681,17 @@ export const signBid = async (id, amount, chainId, account, library) => {
   // return;
   const from = account;
   const chain_id = chainId;
+  
   let currency
   if (chainId === 43114 || chainId === 137 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) currency = (await getListingDetail(id, chainId, library)).currency;
   else currency = (await getListing(id.toString())).currency
+  
   let balance;
-  const web3 = new Web3(window.ethereum)
+  const web3 = new Web3(new Web3.providers.HttpProvider(URLS[chainId]))
   if (!currency) {
     balance = await web3.eth.getBalance(from)
     balance = web3.utils.fromWei(balance)
+    console.log("step")
   }
   else {
     const Bidify = new ethers.Contract(BIDIFY.address[chainId], BIDIFY.abi, library.getSigner())
@@ -707,9 +710,10 @@ export const signBid = async (id, amount, chainId, account, library) => {
           .approve(Bidify._address, atomic(balance, decimals), {gasLimit})
           await tx.wait()
       } else {
+        
         const tx = await erc20
           .approve(Bidify._address, atomic(balance, decimals))
-          await tx.wait()
+        await tx.wait()
       }
     }
   }
@@ -756,7 +760,8 @@ export const bid = async (id, amount, chainId, account, library, setTransaction)
       await Bidify
         .bid(id, "0x0000000000000000000000000000000000000000", atomic(amount, decimals).toString(), {
           from: from,
-          value: atomic(amount, decimals).toString()
+          value: atomic(amount, decimals).toString(),
+          gasLimit
         })
     const ret = await tx.wait()
     setTransaction(ret)
