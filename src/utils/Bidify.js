@@ -1306,7 +1306,11 @@ export const getLogs = async (chainId) => {
   let logs = [];
   try {
     if (chainId === 43114 || chainId === 137 || chainId === 5 || chainId === 56 || chainId === 9001 || chainId === 1285 || chainId === 100) {
-      const ret = await axios.get(`${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}address=${BIDIFY.address[chainId]}&topic0=${topic0}&apikey=${snowApi[chainId]}`)
+      let url = `${getLogUrl[chainId]}&fromBlock=0&${chainId === 9001 || chainId === 100 || chainId === 61 ? 'toBlock=latest&' : ''}address=${BIDIFY.address[chainId]}&topic0=${topic0}`;
+      if (chainId !== 9001 && chainId !== 100) {
+        url += `&apikey=${snowApi[chainId]}`;
+      }
+      const ret = await axios.get(url)
       logs = ret.data.result
     }
     else logs = await web3.eth.getPastLogs({
