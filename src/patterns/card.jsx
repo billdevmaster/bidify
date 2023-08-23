@@ -37,7 +37,6 @@ const Card = (props) => {
   const { userDispatch } = useContext(UserContext);
   const { name, creator, image, currentBid, nextBid, endTime, id, currency, getLists, highBidder, endingPrice, token, platform, isERC721, metadataUrl } =
     props;
-  console.log(image)
   const imageToDisplay = image
   const { account, chainId, library } = useWeb3React();
   const history = useHistory();
@@ -138,7 +137,7 @@ const Card = (props) => {
         setIsError(false);
       }, 3000);
     } finally {
-      const balance = await getBalance(account);
+      const balance = await getBalance(account, chainId);
       console.log(balance)
       userDispatch({
         type: "SET_BALANCE",
@@ -190,7 +189,7 @@ const Card = (props) => {
         }, 3000);
       }
     } finally {
-      const balance = await getBalance(account);
+      const balance = await getBalance(account, chainId);
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },

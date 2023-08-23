@@ -207,7 +207,7 @@ const DetailsPage = () => {
         setIsError(false);
       }, 3000);
     } finally {
-      const balance = await getBalance(account);
+      const balance = await getBalance(account, chainId);
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },
@@ -249,7 +249,7 @@ const DetailsPage = () => {
         setIsError(false);
       }, 3000);
     } finally {
-      const balance = await getBalance(account);
+      const balance = await getBalance(account, chainId);
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },
