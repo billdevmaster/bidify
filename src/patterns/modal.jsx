@@ -9,7 +9,7 @@ import "../styles/patterns/modal.scss";
 //IMPORTING COMPONENTS
 
 import { Text, Button } from "../components";
-import { isValidUrl } from "../utils/Bidify";
+import { handleIpfsImageUrl, isValidUrl } from "../utils/Bidify";
 
 //IMPORTING MEDIA ASSETS
 
@@ -50,12 +50,11 @@ export const CollectionModal = (props) => {
         const arr = image.split("url=");
         let displayImg = "";
         if (arr.length > 1) {
-          SetImageUrl(decodeURIComponent(arr[1]))
           displayImg = decodeURIComponent(arr[1]);
         } else {
-          SetImageUrl(image);
           displayImg = image;
         }
+        SetImageUrl(handleIpfsImageUrl(displayImg))
         try {
           const response = await fetch(displayImg);
           const contentType = response.headers.get("content-type");

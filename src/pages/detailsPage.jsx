@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Fragment, useRef, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { getListing, isValidUrl, getBalance, getFetchValues } from "../utils/Bidify";
+import { getListing, isValidUrl, getBalance, getFetchValues, handleIpfsImageUrl } from "../utils/Bidify";
 import Web3 from "web3";
 import Countdown from "react-countdown";
 import { useWeb3React } from "@web3-react/core";
@@ -80,27 +80,28 @@ const DetailsPage = () => {
     getTransferHistory()
     const setImage = async () => {
       const image = data[0].image
-      const arr = image.split("url=");
-      let displayImg = "";
-      if (arr.length > 1) {
-        SetImageUrl(decodeURIComponent(arr[1]))
-        displayImg = decodeURIComponent(arr[1]);
-      } else {
-        SetImageUrl(image);
-        displayImg = image;
-      }
-      try {
-        const response = await fetch(displayImg);
-        const contentType = response.headers.get("content-type");
-        if (contentType.includes("video")) {
-          setIsVideo(true);
+      if (image) {
+        const arr = image.split("url=");
+        let displayImg = "";
+        if (arr.length > 1) {
+          displayImg = decodeURIComponent(arr[1]);
+        } else {
+          displayImg = image;
         }
-      } catch (e) {
-        setIsVideo(false);
+        SetImageUrl(handleIpfsImageUrl(displayImg))
+        try {
+          const response = await fetch(displayImg);
+          const contentType = response.headers.get("content-type");
+          if (contentType.includes("video")) {
+            setIsVideo(true);
+          }
+        } catch (e) {
+          setIsVideo(false);
+        }
+        if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
+        if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
+        return setPlaceholder(IpfsImage)
       }
-      if (image.includes('storage.googleapis.com')) return setPlaceholder(NFTPortImage)
-      if (image.includes('fleek.co')) return setPlaceholder(FleekImage)
-      return setPlaceholder(IpfsImage)
     }
     setImage();
   // eslint-disable-next-line react-hooks/exhaustive-deps

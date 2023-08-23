@@ -1333,3 +1333,11 @@ export const getDetailFromId = async (id, chainId, account, image, metadataUrl, 
   return { owner, ...detail, network: chainId, image, metadataUrl, name, token, platform, isERC721, descrption }
 
 }
+
+export const handleIpfsImageUrl = (displayImg) => {
+  if (displayImg.includes('ipfs://')) {
+    return displayImg.replace('ipfs://', 'https://ipfs.io/ipfs/');
+  } else {
+    return displayImg;
+  }
+}

@@ -31,7 +31,7 @@ import { baseUrl, BIDIFY, getSymbol } from "../utils/config";
 import axios from "axios";
 import { ethers } from "ethers"
 import PromptFinish from "./promptFinish";
-import { signBid, bid } from "../utils/Bidify";
+import { signBid, bid, handleIpfsImageUrl } from "../utils/Bidify";
 
 const Card = (props) => {
   const { userDispatch } = useContext(UserContext);
@@ -69,12 +69,11 @@ const Card = (props) => {
       const arr = imageToDisplay.split("url=");
       let displayImg = "";
       if (arr.length > 1) {
-        SetImageUrl(decodeURIComponent(arr[1]))
         displayImg = decodeURIComponent(arr[1]);
       } else {
-        SetImageUrl(imageToDisplay);
         displayImg = imageToDisplay;
       }
+      SetImageUrl(handleIpfsImageUrl(displayImg))
       fetch(displayImg).then(response => {
         const contentType = response.headers.get("content-type");
         if (contentType.includes("video")) {
@@ -140,6 +139,7 @@ const Card = (props) => {
       }, 3000);
     } finally {
       const balance = await getBalance(account);
+      console.log(balance)
       userDispatch({
         type: "SET_BALANCE",
         payload: { balance },
